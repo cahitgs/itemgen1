@@ -11,6 +11,7 @@ import { mulberry32, randomSeed, sample, shuffle } from '../logic/rng'
 import type { PuzzleItem } from '../types/puzzle'
 import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
 import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
+import { CubePuzzleGrid } from '../components/cube/CubePuzzleGrid'
 
 /**
  * Mixer page: build a new test by sampling N puzzles from one or more
@@ -385,6 +386,8 @@ export function Mixer() {
                   <PatternCompletionGrid puzzle={mixed.puzzles[previewIndex]} cellPx={32} />
                 ) : mixed.puzzles[previewIndex].type === '3x3' ? (
                   <PuzzleGrid puzzle={mixed.puzzles[previewIndex]} cellPx={80} />
+                ) : mixed.puzzles[previewIndex].type === 'cube-projection' ? (
+                  <CubePuzzleGrid puzzle={mixed.puzzles[previewIndex]} stackPx={180} />
                 ) : null}
                 <pre className="text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-2)] p-3 rounded">
 {`shape: ${mixed.puzzles[previewIndex].shape}

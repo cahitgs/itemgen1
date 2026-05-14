@@ -32,6 +32,7 @@ const RULE_LOAD: Record<RuleKind, number> = {
   or: 4,
   xor: 5,
   xnor: 5,
+  'cube-projection': 4, // 3D mental rotation is cognitively demanding
 }
 
 // Per-shape visual complexity bonus. Plain shapes add 0; busy or compound
@@ -51,6 +52,7 @@ const SHAPE_BONUS: Record<ShapeKind, number> = {
   'nested-polygon': 1,  // two polygons to compare
   'sector-pie': 1,      // sector counting + fill
   'box-lines': 0,
+  'cube-stack': 1,      // 3D voxel structure adds visual parsing load
 }
 
 /**

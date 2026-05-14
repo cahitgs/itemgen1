@@ -5,6 +5,8 @@ import { OptionPanel } from '../components/puzzle/OptionPanel'
 import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
 import { FragmentOptionPanel } from '../components/puzzle/FragmentOptionPanel'
 import { OddOneOutPanel } from '../components/puzzle/OddOneOutPanel'
+import { CubePuzzleGrid } from '../components/cube/CubePuzzleGrid'
+import { CubeOptionPanel } from '../components/cube/CubeOptionPanel'
 import {
   sampleAnnulusIdentity,
   sampleAnnulusDistOf3,
@@ -184,6 +186,8 @@ export function Player() {
             <PatternCompletionGrid puzzle={current} />
           ) : current.type === '3x3' ? (
             <PuzzleGrid puzzle={current} />
+          ) : current.type === 'cube-projection' ? (
+            <CubePuzzleGrid puzzle={current} />
           ) : current.type === 'odd-one-out' ? null /* odd-one-out has no question grid */ : (
             <div className="text-[var(--color-text-muted)]">
               Bu puzzle tipi henüz desteklenmiyor: {current.type}
@@ -195,7 +199,9 @@ export function Player() {
                 ? 'Boş alanı dolduran fragment hangisi?'
                 : current.type === 'odd-one-out'
                   ? 'Diğerlerinden farklı olan hangisi?'
-                  : 'Sağdaki seçeneklerden eksik hücreye uyanı seç:'}
+                  : current.type === 'cube-projection'
+                    ? 'Bu yapı oktaki yönden bakıldığında hangi silüetle eşleşir?'
+                    : 'Sağdaki seçeneklerden eksik hücreye uyanı seç:'}
             </p>
             {current.type === 'pattern-completion' ? (
               <FragmentOptionPanel
@@ -227,6 +233,20 @@ export function Player() {
               />
             ) : current.type === '3x3' ? (
               <OptionPanel
+                puzzle={current}
+                onPick={handlePick}
+                onHover={handleHover}
+                highlightIndex={picked}
+                highlightKind={
+                  picked !== null
+                    ? picked === current.correctIndex
+                      ? 'correct'
+                      : 'wrong'
+                    : undefined
+                }
+              />
+            ) : current.type === 'cube-projection' ? (
+              <CubeOptionPanel
                 puzzle={current}
                 onPick={handlePick}
                 onHover={handleHover}

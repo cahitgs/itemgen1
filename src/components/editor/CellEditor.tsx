@@ -12,8 +12,11 @@ interface Props {
   hidePreview?: boolean
 }
 
-/** Shape display label for the dropdown (Turkish + technical name). */
-const SHAPE_LABELS: Record<ShapeKind, string> = {
+/** Shape display label for the dropdown (Turkish + technical name).
+ *  Note: `cube-stack` is intentionally omitted — it's a virtual ShapeKind
+ *  used only by the Cube Projection puzzle type (which has its own editor
+ *  flow, not the per-cell ShapeConfig flow). */
+const SHAPE_LABELS: Record<Exclude<ShapeKind, 'cube-stack'>, string> = {
   annulus: 'Halkalar (Annulus)',
   dice: 'Zar (Dice)',
   polygon: 'Çokgen (Polygon)',
@@ -47,7 +50,7 @@ interface ParamDef {
   primary?: boolean
 }
 
-const SHAPE_PARAMS: Record<ShapeKind, ParamDef[]> = {
+const SHAPE_PARAMS: Record<Exclude<ShapeKind, 'cube-stack'>, ParamDef[]> = {
   annulus: [
     { name: 'ringCount', label: 'Halka Sayısı', min: 1, max: 4, step: 1, defaultValue: 2, primary: true },
     { name: 'gap', label: 'Halka Aralığı', min: 0.05, max: 0.3, step: 0.01, defaultValue: 0.15 },
@@ -108,7 +111,8 @@ const SHAPE_PARAMS: Record<ShapeKind, ParamDef[]> = {
 /** Default param dictionary for a given shape kind. */
 function defaultParamsFor(kind: ShapeKind): Record<string, number> {
   const out: Record<string, number> = {}
-  for (const p of SHAPE_PARAMS[kind]) {
+  const defs = (SHAPE_PARAMS as Record<string, ParamDef[]>)[kind] ?? []
+  for (const p of defs) {
     out[p.name] = p.defaultValue
   }
   // Special: sector-pie has a packed sectorPatterns field
@@ -132,7 +136,10 @@ const PATTERN_LABELS = ['boş', 'dolu', 'noktalı', 'yatay', 'dikey', 'diag \\',
 export function CellEditor({ config, onChange, label, hidePreview }: Props) {
   const [advanced, setAdvanced] = useState(false)
 
-  const paramDefs = SHAPE_PARAMS[config.kind] ?? []
+  // Cast away cube-stack: it's never reachable here (SHAPE_KINDS dropdown
+  // excludes it). Fall back to [] if we somehow get an unknown kind.
+  const paramDefs =
+    (SHAPE_PARAMS as Record<string, ParamDef[]>)[config.kind] ?? []
   const primary = paramDefs.find((p) => p.primary)
   const secondary = paramDefs.filter((p) => !p.primary)
 
@@ -170,7 +177,9 @@ export function CellEditor({ config, onChange, label, hidePreview }: Props) {
           className="w-full px-2 py-1.5 rounded bg-[var(--color-surface-2)] border border-[var(--color-border)] text-sm"
         >
           {SHAPE_KINDS.map((k) => (
-            <option key={k} value={k}>{SHAPE_LABELS[k]}</option>
+            <option key={k} value={k}>
+              {(SHAPE_LABELS as Record<string, string>)[k] ?? k}
+            </option>
           ))}
         </select>
       </div>

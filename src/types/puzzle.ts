@@ -28,6 +28,7 @@ export type ShapeKind =
   | 'nested-polygon' // polygon inside polygon (outer + inner)
   | 'sector-pie'   // pie chart with N filled/empty sectors
   | 'box-lines'    // box with internal lines (legacy Corvus)
+  | 'cube-stack'   // 3D isometric block stack (used by cube-projection puzzle)
 
 /** Per-cell shape parameters. */
 export interface ShapeConfig {
@@ -64,6 +65,7 @@ export type RuleKind =
   | 'pattern-completion' // big repeating pattern with a blank — "what fills the blank?"
   | 'odd-one-out'    // N items, one breaks the pattern — pick the different one
   | 'and' | 'or' | 'xor' | 'xnor'  // logic gates on binary cells
+  | 'cube-projection' // 3D block stack → "which 2D silhouette appears from axis X?"
 
 // ──────────────────────────────────────────────────────────────
 // Puzzle items (discriminated by `type`)
@@ -130,12 +132,37 @@ export interface PatternCompletionPuzzle extends PuzzleBase {
   correctIndex: number
 }
 
+/**
+ * Cube Projection puzzle ("which 2D silhouette appears from the marked axis?").
+ *
+ *   - `cubes` is a set of voxel positions ([x,y,z] integer coords) forming
+ *     a connected 3D block stack.
+ *   - `questionAxis` is the viewing direction the player must reason about
+ *     (drawn on the stack with an arrow + dot indicator).
+ *   - Each option is a (axis, silhouette grid) pair; the correct one has
+ *     `axis === questionAxis`. The other options are silhouettes from
+ *     different axes (or perturbed silhouettes as fallback).
+ */
+export type ProjectionAxis = 'top' | 'front' | 'back' | 'left' | 'right'
+
+export interface CubeProjectionPuzzle extends PuzzleBase {
+  type: 'cube-projection'
+  /** Voxel positions in a small integer grid (4×4×4 default). */
+  cubes: Array<[number, number, number]>
+  /** Axis the question asks about (drawn on the stack with arrow+dot). */
+  questionAxis: ProjectionAxis
+  /** Each option = (axis, silhouette grid). options[correctIndex].axis === questionAxis. */
+  options: Array<{ axis: ProjectionAxis; grid: number[][] }>
+  correctIndex: number
+}
+
 export type PuzzleItem =
   | Matrix3x3Puzzle
   | Matrix2x2Puzzle
   | SeriesPuzzle
   | OddOneOutPuzzle
   | PatternCompletionPuzzle
+  | CubeProjectionPuzzle
 
 // ──────────────────────────────────────────────────────────────
 // Test sessions & results

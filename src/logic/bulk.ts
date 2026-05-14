@@ -10,6 +10,7 @@
  */
 
 import type {
+  CubeProjectionPuzzle,
   Matrix3x3Puzzle,
   PatternCompletionPuzzle,
   PuzzleItem,
@@ -35,6 +36,10 @@ import {
   generateRandomPatternCompletion,
   isPatternCompletionValid,
 } from './patternCompletion'
+import {
+  buildCubeProjectionPuzzle,
+  isCubeProjectionValid,
+} from './cubeProjection'
 import { mulberry32, randomSeed } from './rng'
 
 export interface BulkSpec {
@@ -117,6 +122,9 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   // internally), so we register against every shape so the UI accepts any
   // dropdown combo with this rule.
   ...ALL_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'pattern-completion']),
+  // Cube-projection: only supported with the virtual 'cube-stack' shape.
+  // The generator ignores shape parameters anyway (3D voxel data is independent).
+  ['cube-stack', 'cube-projection'],
 ]
 
 export function isSupported(shape: ShapeKind, rule: RuleKind): boolean {
@@ -167,6 +175,8 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
         return generateRandomOddOneOut(spec.shape, rng)
       case 'pattern-completion':
         return generateRandomPatternCompletion(rng)
+      case 'cube-projection':
+        return buildCubeProjectionPuzzle(rng)
       default:
         throw new Error(`Unsupported rule for bulk: ${spec.rule}`)
     }
@@ -235,6 +245,11 @@ function isPuzzleValid(p: PuzzleItem): boolean {
   // Pattern completion has its own validator (different cell structure)
   if (p.type === 'pattern-completion') {
     return isPatternCompletionValid(p as PatternCompletionPuzzle)
+  }
+
+  // Cube projection has its own validator (voxel + silhouette grid structure)
+  if (p.type === 'cube-projection') {
+    return isCubeProjectionValid(p as CubeProjectionPuzzle)
   }
 
   // Odd-one-out: exactly ONE option must differ from the rest visually.

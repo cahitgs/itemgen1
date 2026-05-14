@@ -9,6 +9,8 @@ import {
 } from '../logic/bulk'
 import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
 import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
+import { CubePuzzleGrid } from '../components/cube/CubePuzzleGrid'
+import { CubeSilhouette } from '../components/cube/CubeSilhouette'
 import { Shape } from '../components/shapes/Shape'
 import type { ShapeKind, RuleKind } from '../types/puzzle'
 import { saveTest } from '../db/dexie'
@@ -39,6 +41,7 @@ const SHAPE_OPTIONS: Array<{ value: ShapeUiValue; label: string }> = [
   { value: 'nested-polygon', label: 'Nested Polygon (İç İçe Çokgen)' },
   { value: 'sector-pie', label: 'Sector Pie (Pasta Dilim)' },
   { value: 'pattern', label: 'Pattern (Renkli Motif Deseni)' },
+  { value: 'cube-stack', label: 'Cube Stack (3D Blok Yığını)' },
 ]
 
 const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
@@ -58,6 +61,7 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'xnor', label: 'XNOR — ¬(col0 ⊻ col1) = col2 (Sector Pie veya Checkerboard)' },
   { value: 'odd-one-out', label: 'Odd-One-Out — farklı olanı bul' },
   { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir?' },
+  { value: 'cube-projection', label: 'Cube Projection — 3D yapıdan 2D silüet' },
 ]
 
 const COUNT_PRESETS = [10, 100, 1000, 5000]
@@ -83,6 +87,7 @@ export function Generate() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
   // Coupling: 'pattern' shape ↔ 'pattern-completion' rule
+  //           'cube-stack' shape ↔ 'cube-projection' rule
   // When user picks one, the other auto-snaps to the partner so the dropdowns
   // never present incompatible combinations.
   useEffect(() => {
@@ -90,32 +95,41 @@ export function Generate() {
       setRule('pattern-completion')
     } else if (shape !== 'pattern' && rule === 'pattern-completion') {
       setShape('pattern')
+    } else if (shape === 'cube-stack' && rule !== 'cube-projection') {
+      setRule('cube-projection')
+    } else if (shape !== 'cube-stack' && rule === 'cube-projection') {
+      setShape('cube-stack')
     }
   }, [shape, rule])
 
   // Dropdown visibility:
-  // - In "Pattern mode" (shape=pattern OR rule=pattern-completion), narrow
-  //   each dropdown to JUST the pattern partner so the mode is explicit.
-  // - Otherwise, show ALL options including Pattern / Pattern Completion,
-  //   so the user can always switch INTO pattern mode by picking either.
+  // - In "Pattern mode" / "Cube mode", narrow each dropdown to JUST the
+  //   partner so the mode is explicit.
+  // - Otherwise, show ALL options so the user can always switch INTO either
+  //   special mode by picking the relevant shape/rule.
   const visibleShapes = useMemo(
     () =>
       rule === 'pattern-completion'
         ? SHAPE_OPTIONS.filter((o) => o.value === 'pattern')
-        : SHAPE_OPTIONS,
+        : rule === 'cube-projection'
+          ? SHAPE_OPTIONS.filter((o) => o.value === 'cube-stack')
+          : SHAPE_OPTIONS,
     [rule],
   )
   const visibleRules = useMemo(
     () =>
       shape === 'pattern'
         ? RULE_OPTIONS.filter((o) => o.value === 'pattern-completion')
-        : RULE_OPTIONS,
+        : shape === 'cube-stack'
+          ? RULE_OPTIONS.filter((o) => o.value === 'cube-projection')
+          : RULE_OPTIONS,
     [shape],
   )
 
   // For bulkGenerate, substitute 'pattern' with any real ShapeKind. The
   // pattern-completion generator ignores the shape and picks motif kinds
   // internally, so the substituted value just satisfies the type system.
+  // 'cube-stack' is already a real ShapeKind so no substitution needed.
   const effectiveShape: ShapeKind = shape === 'pattern' ? 'polygon' : shape
 
   const spec: BulkSpec = useMemo(
@@ -481,6 +495,8 @@ function ResultPanel({
             <PatternCompletionGrid puzzle={puzzle} cellPx={36} />
           ) : puzzle.type === '3x3' ? (
             <PuzzleGrid puzzle={puzzle} cellPx={90} />
+          ) : puzzle.type === 'cube-projection' ? (
+            <CubePuzzleGrid puzzle={puzzle} stackPx={200} />
           ) : puzzle.type === 'odd-one-out' ? (
             <div className="text-sm text-[var(--color-text-muted)] italic px-4 py-8">
               Odd-One-Out: tüm seçenekler sağda gösteriliyor
@@ -538,7 +554,20 @@ function ResultPanel({
                         <Shape config={opt} px={70} />
                       </div>
                     ))
-                  : null}
+                  : puzzle.type === 'cube-projection'
+                    ? puzzle.options.map((opt, i) => (
+                        <div
+                          key={i}
+                          className={`w-24 h-24 rounded-lg flex items-center justify-center ${
+                            i === puzzle.correctIndex
+                              ? 'bg-[var(--color-surface-2)] ring-2 ring-[var(--color-success)]'
+                              : 'bg-[var(--color-surface-2)]'
+                          }`}
+                        >
+                          <CubeSilhouette grid={opt.grid} px={84} />
+                        </div>
+                      ))
+                    : null}
             </div>
             <pre className="mt-4 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-2)] p-3 rounded max-w-md overflow-auto">
 {`id:    ${puzzle.id}

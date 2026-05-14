@@ -1118,6 +1118,9 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   'box-lines': randomBoxLinesVariants,
   'nested-polygon': randomNestedPolygonVariants,
   'sector-pie': randomSectorPieVariants,
+  // cube-stack is a virtual shape that only the cube-projection puzzle uses;
+  // it never participates in 2D variant generation (no ShapeConfig flows).
+  'cube-stack': null,
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -1151,6 +1154,8 @@ export const PRIMARY_PARAM: Record<
   'nested-polygon': { name: 'outerSides', min: 3, max: 8 },
   // Sector-pie: sectorCount as primary count
   'sector-pie': { name: 'sectorCount', min: 2, max: 8 },
+  // Cube-stack is virtual — not used in 2D arithmetic rules.
+  'cube-stack': null,
 }
 
 /**
@@ -1429,6 +1434,11 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
         stroke, size, strokeWidth,
       })
     }
+    case 'cube-stack': {
+      // Virtual shape — only used by cube-projection puzzles which build their
+      // own data structure, not ShapeConfig. Caller should never reach here.
+      throw new Error('randomBaseShape: cube-stack is virtual and cannot be rendered as ShapeConfig')
+    }
   }
 }
 
@@ -1701,6 +1711,8 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
       const start = randInt(rng, 2, 6)
       return { kind: 'param', name: 'sectorCount', values: [start, start + 1, start + 2] }
     }
+    case 'cube-stack':
+      throw new Error('pickPrimaryProgression: cube-stack does not participate in progression')
   }
 }
 
@@ -1724,6 +1736,7 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   'sector-pie':     ['size', 'strokeWidth'],
   petals:       ['size', 'strokeWidth'],
   'spike-ring': ['size', 'strokeWidth'],
+  'cube-stack': [],  // virtual shape — never participates in progression
 }
 
 function pickSecondaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
