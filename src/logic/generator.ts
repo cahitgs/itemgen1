@@ -70,6 +70,30 @@ export function clone(s: ShapeConfig): ShapeConfig {
 }
 
 /**
+ * Sentinel "blank cell" — used by Distribution-of-2 puzzles to mark grid
+ * positions that should render as an empty dashed-border cell instead of a
+ * shape. PuzzleGrid checks `params.blank === 1` to render the blank state.
+ *
+ * Marked with kind='annulus' arbitrarily — never rendered — and a unique
+ * visualSignature so isPuzzleValid can distinguish it from real shapes.
+ */
+export function blankCellConfig(): ShapeConfig {
+  return {
+    kind: 'annulus',
+    size: 0,
+    rotation: 0,
+    fill: null,
+    stroke: 'transparent',
+    strokeWidth: 0,
+    params: { blank: 1 },
+  }
+}
+
+export function isBlankCell(s: ShapeConfig): boolean {
+  return s.params.blank === 1
+}
+
+/**
  * Build a stable structural signature of a puzzle (for dedup).
  * Two puzzles with the same signature look identical to the player.
  *
@@ -1156,6 +1180,91 @@ export function generateRandomDistOf3(
     id: nextId(rng),
     type: '3x3',
     rule: 'dist-of-3',
+    shape,
+    cells,
+    options,
+    correctIndex,
+    optionCount: options.length,
+    difficulty: 2,
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Rule: Distribution-of-2 (Latin square with 2 variants + blank)
+//
+//   2 distinct shape variants are distributed across the 3×3 grid so that
+//   each row and each column contains exactly { A, B, blank }. The blank
+//   cell is a marker (rendered as a dashed-border empty cell by PuzzleGrid).
+//   The missing cell [2][2] is ALWAYS one of A/B (never blank), so the
+//   player picks among real shapes — never asked "is the answer empty?".
+//
+//   Pattern (offset = (c - r) mod 3):
+//      offset 0 → A    offset 1 → B    offset 2 → blank
+//
+//      [ A B _ ]
+//      [ _ A B ]
+//      [ B _ A ]   ← missing = A
+//
+//   Only meaningful for shapes where the blank cell visually contrasts with
+//   the rendered shape (excludes grid-dots and checkerboard).
+// ──────────────────────────────────────────────────────────────
+
+/** Shapes for which dist-of-2 produces clear puzzles. */
+const DIST_OF_2_COMPATIBLE: ShapeKind[] = [
+  'annulus', 'dice', 'polygon', 'star', 'arrow',
+  'petals', 'spike-ring', 'hammer', 'bars',
+  // Excluded: 'grid-dots' (empty space in dots conflicts with blank cell),
+  //           'checkerboard' (own empty cells conflict with blank cell)
+]
+
+export function isDistOf2Compatible(shape: ShapeKind): boolean {
+  return DIST_OF_2_COMPATIBLE.includes(shape)
+}
+
+export function generateRandomDistOf2(
+  shape: ShapeKind,
+  rng: Rng = mulberry32(randomSeed()),
+): Matrix3x3Puzzle {
+  if (!isDistOf2Compatible(shape)) {
+    throw new Error(`dist-of-2 not supported for shape "${shape}"`)
+  }
+
+  const variantsFn = VARIANT_GENERATORS[shape]
+  if (!variantsFn) throw new Error(`No variant generator for shape "${shape}"`)
+  const variants3 = variantsFn(rng)
+  const A = variants3[0]
+  const B = variants3[1]
+
+  // Build 3×3 grid using offset pattern:
+  //   slot = ((c - r) mod 3 + 3) mod 3
+  //   slot 0 → A,  slot 1 → B,  slot 2 → blank
+  const cells: ShapeConfig[][] = []
+  for (let r = 0; r < 3; r++) {
+    cells[r] = []
+    for (let c = 0; c < 3; c++) {
+      const slot = (((c - r) % 3) + 3) % 3
+      if (slot === 0) cells[r].push(clone(A))
+      else if (slot === 1) cells[r].push(clone(B))
+      else cells[r].push(blankCellConfig())
+    }
+  }
+
+  // cells[2][2] always has slot 0 → A. Correct = A.
+  const correct = clone(A)
+
+  // Distractors:
+  //   - sibling B (already visible in the grid — classic Raven trap)
+  //   - perturbations of A from makeDistinctDistractors
+  const siblings = [clone(B)]
+  const distractors = makeDistinctDistractors(rng, correct, siblings, 3)
+
+  const { result: options, permutation } = shuffleRng(rng, [correct, ...distractors])
+  const correctIndex = permutation.indexOf(0)
+
+  return {
+    id: nextId(rng),
+    type: '3x3',
+    rule: 'dist-of-2',
     shape,
     cells,
     options,

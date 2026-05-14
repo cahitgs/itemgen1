@@ -18,10 +18,12 @@ import type {
 } from '../types/puzzle'
 import {
   generateRandomArithmetic3x3,
+  generateRandomDistOf2,
   generateRandomDistOf3,
   generateRandomIdentity,
   generateRandomProgression3x3,
   generateRandomRotation3x3,
+  isBlankCell,
   puzzleSignature,
   visualSignature,
 } from './generator'
@@ -68,6 +70,13 @@ const ALL_SHAPES: ShapeKind[] = [
 // produces visually distinct cells in every grid position.
 const ROTATION_ONLY_SHAPES: ShapeKind[] = ['arrow', 'hammer']
 
+// Dist-of-2 compatible shapes — exclude grid-dots and checkerboard whose
+// internal empty space would conflict with the blank-cell marker.
+const DIST_OF_2_SHAPES: ShapeKind[] = [
+  'annulus', 'dice', 'polygon', 'star', 'arrow',
+  'petals', 'spike-ring', 'hammer', 'bars',
+]
+
 const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...ALL_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
     [s, 'identity'],
@@ -79,6 +88,7 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
     [s, 'subtraction'],
   ]),
   ...ROTATION_ONLY_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'rotation']),
+  ...DIST_OF_2_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'dist-of-2']),
   // Pattern-completion: shape parameter is ignored (the generator picks motifs
   // internally), so we register against every shape so the UI accepts any
   // dropdown combo with this rule.
@@ -110,6 +120,8 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
         return generateRandomIdentity(spec.shape, rng)
       case 'dist-of-3':
         return generateRandomDistOf3(spec.shape, rng)
+      case 'dist-of-2':
+        return generateRandomDistOf2(spec.shape, rng)
       case 'progression':
         return generateRandomProgression3x3(spec.shape, rng)
       case 'rotation':
@@ -199,6 +211,19 @@ function isPuzzleValid(p: PuzzleItem): boolean {
   if (m3.rule === 'dist-of-3') {
     const rowSigs = m3.cells[0].map(visualSignature)
     if (new Set(rowSigs).size !== 3) return false
+  }
+
+  // 2b. For dist-of-2: each row should contain exactly 2 distinct visible
+  //     shapes + 1 blank cell. Also: the 2 visible variants must be visually
+  //     distinguishable from each other.
+  if (m3.rule === 'dist-of-2') {
+    for (const row of m3.cells) {
+      const blanks = row.filter(isBlankCell).length
+      if (blanks !== 1) return false
+      const visibleSigs = row.filter((c) => !isBlankCell(c)).map(visualSignature)
+      if (visibleSigs.length !== 2) return false
+      if (new Set(visibleSigs).size !== 2) return false
+    }
   }
 
   // 3. For progression: BOTH axes must be visible
