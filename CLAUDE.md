@@ -9,12 +9,13 @@
 
 ## 🎯 30 Saniyelik Özet
 
-**Cogitem** (önceki adı NeoCorvus), Raven Progressive Matrices tarzı non-verbal bilişsel testlerin **modern, tarayıcı-yerel** üreticisi ve oynatıcısı. [Isaac Thimbleby'nin Corvus](https://github.com/Thimbleby/Corvus) projesinden esinlenmiş, sıfırdan React + TypeScript ile yeniden yazılmış. İsmin etimolojisi: *cogito* (Latince "düşünüyorum") + *item* (test öğesi).
+**Cogitem** non-verbal bilişsel test platformu. Tarayıcıda, backend yok. Generate (toplu üret) → Library (IndexedDB'de sakla) → Mixer (karıştır) → Player (oyna, CSV indir) akışı.
 
-- **Kullanıcı**: Türkçe konuşur, portfolyo projesi olarak geliştiriyor
-- **Hedef**: Tek tıkla binlerce benzersiz soru üretebilen, tarayıcıda çalışan, paylaşılabilir bir test platformu
-- **Backend yok**: Tüm veri IndexedDB'de (Dexie)
-- **Konum**: `C:\Users\tekno\Desktop\neocorvus`
+- **Canlı**: <https://cahitgs.github.io/itemgen1/>
+- **Repo**: <https://github.com/cahitgs/itemgen1>
+- **Kullanıcı**: Türkçe konuşur (cahitgs), portfolyo + olası akademik kullanım
+- **Konum**: `C:\Users\tekno\Desktop\neocorvus` (proje), `C:\Users\tekno\Desktop\Corvus-master` (orijinal Corvus + çalışma dizini)
+- **GitHub Pages otomatik deploy**: `git push` → ~2 dk sonra canlı
 
 ---
 
@@ -23,35 +24,94 @@
 | | |
 |---|---|
 | **Node** | v22 |
-| **npm** | v10 — ⚠ PowerShell execution policy yüzünden **her zaman `npm.cmd` kullan** (`npm` doğrudan çalışmaz) |
-| **OS** | Windows (path'lerde `\` kullan) |
-| **IDE bağlamı** | Çalışma dizini genelde `C:\Users\tekno\Desktop\Corvus-master` (Corvus orijinali). Proje farklı klasörde: `C:\Users\tekno\Desktop\neocorvus`. Çoğu komutta `Set-Location` ile geçmek gerekir. |
+| **npm** | v10 — ⚠ **her zaman `npm.cmd`** kullan (PowerShell exec policy npm.ps1'i blokluyor) |
+| **OS** | Windows |
+| **Çalışma dizini** | Genelde `C:\Users\tekno\Desktop\Corvus-master`. Proje klasörü: `C:\Users\tekno\Desktop\neocorvus`. Komutlarda `Set-Location` ile geç. |
+| **Dev server portu** | Genelde 5173. Boşsa 5174'e otomatik düşer. |
 
 ### Komutlar
 
 ```powershell
-# Proje köküne git
 Set-Location C:\Users\tekno\Desktop\neocorvus
 
-npm.cmd run dev      # Vite dev server (http://localhost:5173, HashRouter kullanır → #/play etc.)
-npm.cmd run build    # tsc + vite build → dist/
+npm.cmd run dev      # Vite dev (HMR ile canlı yenileme)
+npm.cmd run build    # tsc + vite build
 npm.cmd run preview  # Production build önizleme
+
+# Push deploy
+git add .
+git commit -m "Mesaj"
+git push   # → GitHub Actions otomatik deploy
 ```
+
+### Git Kimliği
+
+Lokal config: `user.name=cahitgs`, `user.email=cahitgs@gmail.com`. Sadece bu repoda; global config'e dokunulmadı.
 
 ---
 
 ## 🛠 Tech Stack
 
-| Paket | Versiyon | Niye |
+| Paket | Versiyon | Notes |
 |---|---|---|
-| **Vite** | 8 | Hızlı dev, kolay deploy |
-| **React** | 19 | UI |
-| **TypeScript** | 5.x | Tip güvenliği (özellikle ShapeKind/RuleKind union'larında kritik) |
-| **Tailwind CSS** | v4 | `@import "tailwindcss"` + `@theme { ... }` — config dosyası yok |
-| **React Router** | 7 | **HashRouter** (statik deploy uyumlu) |
-| **Zustand** | latest | Kurulu ama henüz kullanılmıyor (gelecek Editor için) |
+| **Vite** | 8 | `base: './'` (statik deploy için), Tailwind v4 plugin yüklü |
+| **React** | 19 | `useId` hook'u kullanılıyor (SectorPie'de SVG pattern ID'leri için) |
+| **TypeScript** | 6.x (strict) | `noUnusedLocals: true` → dead code = build hata |
+| **Tailwind CSS** | v4 | `@import "tailwindcss"` + `@theme {...}` — config dosyası yok |
+| **React Router** | 7 | **HashRouter** (statik hosting için zorunlu) |
 | **Dexie** | latest | IndexedDB CRUD |
 | **PapaParse** | latest | CSV export |
+| **Zustand** | latest | Kurulu ama henüz kullanılmıyor |
+
+---
+
+## 📊 Güncel Envanter — *Şu Anki Tam Kapsam*
+
+### Şekiller (14)
+
+| Şekil | Render | Primary Param | Fold | Bool Op? |
+|---|---|---|---|---|
+| `annulus` | İç içe halkalar | `ringCount` (1-4) | 360° | — |
+| `dice` | Zar yüzü, 1-9 nokta | `dotCount` (1-9) | 1/2/4 (paterne göre) | — |
+| `polygon` | Düzgün çokgen (3-8 kenar) | `sides` (3-8) | n-fold | — |
+| `star` | n-köşeli yıldız (4-10) | `points` (4-10) | n-fold | — |
+| `arrow` | Yönlü ok (asimetrik) | yok | 1 | — |
+| `petals` | Çiçek (3-12 yaprak) | `petalCount` (3-12) | n-fold | — |
+| `spike-ring` | Dikenli halka (4-16 diken) | `spikeCount` (4-16) | n-fold | — |
+| `hammer` | Çekiç + corner marker | yok | 1 | — |
+| `bars` | Paralel çizgi grubu (1-6) | `barCount` (1-6) | 2 | — |
+| `grid-dots` | m×n nokta grid'i | `rows` (1-4) | 2 veya 4 | — |
+| `checkerboard` | m×n dolu/boş kare | yok | 1 | ✓ (`pattern` bit-mask) |
+| `box-lines` | Kutu + iç çizgi (6-bit lineMask) | yok | 1 | — |
+| `nested-polygon` | İç içe çokgen (outer + inner) | `outerSides` (3-8) | min(o,i) | — |
+| `sector-pie` | Pasta dilim + per-sektör pattern | `sectorCount` (2-8) | 1 | ✓ (`sectorPatterns` 3-bit/sektör) |
+
+### Mantıklar (15 — RuleKind union)
+
+| Kural | Uygulama | Hangi şekiller |
+|---|---|---|
+| `identity` | Hepsi aynı | Hepsi |
+| `dist-of-3` | Latin karesi 3 varyant | Hepsi |
+| `dist-of-2` | 2 varyant + boş hücre (sentinel `params.blank = 1`) | 9 net şekil (grid-dots, checkerboard hariç) — **UI'da gizli** |
+| `progression` | 2 eksenli artış (primary col, secondary row) | Hepsi |
+| `rotation` | Saf rotasyon, sliding-window (r+c)×Δ | Sadece fold<4: arrow, hammer |
+| `addition` | col0+col1=col2 | COUNT_PARAM_SHAPES |
+| `subtraction` | col0-col1=col2 | COUNT_PARAM_SHAPES |
+| `multiplication` | col0×col1=col2 | COUNT_PARAM_SHAPES |
+| `mirror` | row 2 = row 0'ın aynası (180° rotation) | MIRROR_SHAPES (asimetrik şekiller) |
+| `and`, `or`, `xor`, `xnor` | Bit-bit boolean op | sector-pie, checkerboard |
+| `pattern-completion` | Büyük desende boşluk doldurma | "Pattern" virtual shape (UI-only) |
+| `odd-one-out` | N öğeden farklı olanı bul | Hepsi |
+
+### Puzzle Tipleri (3)
+
+| Tip | type discriminator | Render bileşeni |
+|---|---|---|
+| 3×3 Matrix | `Matrix3x3Puzzle` (`type: '3x3'`) | `PuzzleGrid` + `OptionPanel` |
+| Pattern Completion | `PatternCompletionPuzzle` (`type: 'pattern-completion'`) | `PatternCompletionGrid` + `FragmentOptionPanel` |
+| Odd-One-Out | `OddOneOutPuzzle` (`type: 'odd-one-out'`) | (yok) + `OddOneOutPanel` |
+| 2×2 Matrix | `Matrix2x2Puzzle` | **Tip union'da var, generator+UI henüz yok** |
+| Series | `SeriesPuzzle` | **Tip union'da var, generator+UI henüz yok** |
 
 ---
 
@@ -59,131 +119,138 @@ npm.cmd run preview  # Production build önizleme
 
 ```
 neocorvus/
-├── CLAUDE.md                    ← BURASI
-├── README.md
-├── package.json
-├── vite.config.ts               ← Tailwind plugin + base: './'
+├── CLAUDE.md                              ← BURASI (Claude için handoff)
+├── README.md                              ← Kullanıcı dökümantasyonu
+├── .github/workflows/deploy.yml           ← GitHub Actions Pages deploy
 ├── src/
-│   ├── App.tsx                  ← HashRouter + routes
+│   ├── App.tsx                            ← HashRouter + routes
 │   ├── main.tsx
-│   ├── index.css                ← Tailwind import + @theme renkleri
-│   ├── types/
-│   │   └── puzzle.ts            ← Tüm veri modelleri (ShapeKind, RuleKind, PuzzleItem)
+│   ├── index.css                          ← Tailwind + @theme renkleri
+│   │
+│   ├── types/puzzle.ts                    ← ShapeKind, RuleKind, PuzzleItem union, SavedTest, etc.
+│   │
 │   ├── components/
-│   │   ├── shapes/              ← Her şekil için SVG bileşeni
-│   │   │   ├── Shape.tsx        ← Dispatcher (kind → component)
-│   │   │   ├── Annulus.tsx, Dice.tsx
-│   │   │   ├── Polygon.tsx, Star.tsx, Arrow.tsx
-│   │   │   └── Petals.tsx, SpikeRing.tsx
+│   │   ├── shapes/                        ← Her şekil için 1 SVG bileşeni + Shape.tsx dispatcher
+│   │   │   ├── Shape.tsx                  ← switch(kind) → render
+│   │   │   ├── Annulus.tsx, Dice.tsx, Polygon.tsx, Star.tsx, Arrow.tsx,
+│   │   │   ├── Petals.tsx, SpikeRing.tsx
+│   │   │   ├── Hammer.tsx                 ← Çekiç + marker (cell coords'ta marker)
+│   │   │   ├── Bars.tsx                   ← N paralel çizgi, 3 orientation
+│   │   │   ├── GridDots.tsx               ← m×n nokta grid'i
+│   │   │   ├── Checkerboard.tsx           ← m×n dolu/boş kare (inset düzeltmesi var)
+│   │   │   ├── BoxLines.tsx               ← Kutu + 6-bit lineMask
+│   │   │   ├── NestedPolygon.tsx          ← İç içe çokgen
+│   │   │   └── SectorPie.tsx              ← Per-sektör pattern (useId ile SVG pattern defs)
+│   │   │
 │   │   └── puzzle/
-│   │       ├── PuzzleGrid.tsx   ← 3×3 + ? render
-│   │       └── OptionPanel.tsx  ← Cevap şıkları
+│   │       ├── PuzzleGrid.tsx             ← 3×3 grid + blank cell + "?" handling
+│   │       ├── OptionPanel.tsx            ← 4 ShapeConfig şıkkı
+│   │       ├── PatternCompletionGrid.tsx  ← Büyük motif desen + boşluk overlay
+│   │       ├── FragmentOptionPanel.tsx    ← Fragment grid şıkları
+│   │       └── OddOneOutPanel.tsx         ← N şekil, 1'i farklı
+│   │
 │   ├── pages/
-│   │   ├── Home.tsx             ← 4 ana navigasyon kartı
-│   │   ├── Player.tsx           ← Test oynatıcı + CSV export
-│   │   ├── Generate.tsx         ← Bulk üretim UI
-│   │   ├── Mixer.tsx            ← Çoklu kaynaktan rastgele örnekleme
-│   │   ├── Library.tsx          ← Kaydedilmiş testler
-│   │   └── Editor.tsx           ← Faz 2 placeholder
-│   ├── logic/
-│   │   ├── generator.ts         ← TÜM rule generators (büyük dosya, en kritik)
-│   │   ├── bulk.ts              ← bulkGenerate, SUPPORTED matrix, isPuzzleValid
-│   │   └── rng.ts               ← mulberry32 PRNG
-│   ├── db/
-│   │   └── dexie.ts             ← IndexedDB schema + CRUD
-│   ├── store/                   ← (boş — Zustand gelecekte)
-│   └── utils/
-│       └── csv.ts               ← AnswerLog → CSV download
+│   │   ├── Home.tsx                       ← 4 ana kart
+│   │   ├── Player.tsx                     ← Test runner — puzzle.type switch'li
+│   │   ├── Generate.tsx                   ← Bulk üretim UI (Pattern + 14 normal şekil dropdown'da)
+│   │   ├── Library.tsx                    ← IndexedDB CRUD UI
+│   │   ├── Mixer.tsx                      ← Çoklu kaynak örnekleme
+│   │   └── Editor.tsx                     ← Yer tutucu (Faz 2'de yapılacak)
+│   │
+│   ├── logic/                             ← TÜM matematik (EN KRİTİK)
+│   │   ├── rng.ts                         ← mulberry32 + sample/pick/shuffle helpers
+│   │   ├── generator.ts                   ← Tüm kural üreteçleri + visualSignature + helpers
+│   │   ├── patternCompletion.ts           ← Pattern-completion generator (ayrı dosya)
+│   │   ├── bulk.ts                        ← bulkGenerate + SUPPORTED matrix + isPuzzleValid
+│   │   └── difficulty.ts                  ← Dinamik difficulty kalibrasyonu (B6)
+│   │
+│   ├── db/dexie.ts                        ← IndexedDB schema + CRUD
+│   │
+│   └── utils/csv.ts                       ← AnswerLog → CSV download
 ```
 
 ---
 
-## 🧬 Veri Modeli (types/puzzle.ts)
+## 🧬 Veri Modeli (`types/puzzle.ts`)
 
-### ShapeKind
+### ShapeKind (14)
 ```ts
 type ShapeKind =
-  | 'annulus'      // iç içe halkalar
-  | 'dice'         // zar yüzü (1-9 nokta)
-  | 'polygon'      // düzgün çokgen (3-8 kenar)
-  | 'star'         // n-köşeli yıldız (4-10)
-  | 'arrow'        // yönlü ok
-  | 'petals'       // çiçek (3-12 yaprak)
-  | 'spike-ring'   // dikenli halka (4-16 diken)
-  | 'box-lines'    // legacy Corvus (henüz implement edilmedi)
+  | 'annulus' | 'dice' | 'polygon' | 'star' | 'arrow'
+  | 'petals' | 'spike-ring' | 'hammer' | 'bars'
+  | 'grid-dots' | 'checkerboard' | 'box-lines'
+  | 'nested-polygon' | 'sector-pie'
 ```
 
-### RuleKind
+### RuleKind (15)
 ```ts
 type RuleKind =
-  | 'identity'      // hepsi aynı  (DONE)
-  | 'dist-of-3'     // Latin karesi 3 varyant   (DONE)
-  | 'dist-of-2'     // 2 varyant + boş hücre    (TODO)
-  | 'addition'      // col0 + col1 = col2       (DONE)
-  | 'subtraction'   // col0 − col1 = col2       (DONE)
-  | 'progression'   // iki eksenli artış         (DONE)
-  | 'and' | 'or' | 'xor' | 'xnor'  // (TODO — bit-pattern mantığı)
+  | 'identity' | 'dist-of-3' | 'dist-of-2'
+  | 'addition' | 'subtraction' | 'multiplication'
+  | 'progression' | 'rotation' | 'mirror'
+  | 'pattern-completion' | 'odd-one-out'
+  | 'and' | 'or' | 'xor' | 'xnor'
 ```
 
 ### ShapeConfig
 ```ts
 interface ShapeConfig {
   kind: ShapeKind
-  size: number          // 0–1
-  rotation: number      // 0–360
-  fill: string | null   // CSS color veya null
-  stroke: string        // CSS color
-  strokeWidth: number   // px (size=1'de)
-  params: Record<string, number>   // ringCount / dotCount / sides / points / petalCount / spikeCount / ...
+  size: number          // 0-1
+  rotation: number      // 0-360
+  fill: string | null
+  stroke: string
+  strokeWidth: number
+  params: Record<string, number>   // şekil-spesifik: ringCount, dotCount, sides, points,
+                                   // petalCount, spikeCount, barCount, rows, cols,
+                                   // lineMask, outerSides, innerSides, innerScale,
+                                   // sectorCount, sectorPatterns, fillMask (legacy),
+                                   // markerPos, blank (sentinel for dist-of-2), ...
 }
 ```
 
-### Matrix3x3Puzzle
+### Puzzle types (discriminated by `type`)
 ```ts
-interface Matrix3x3Puzzle {
-  id: string
-  type: '3x3'
-  rule: RuleKind
-  shape: ShapeKind
-  cells: ShapeConfig[][]       // 3×3, cells[2][2] = "?" olarak render edilir
-  options: ShapeConfig[]       // 4 cevap şıkkı (1 doğru + 3 distractor)
-  correctIndex: number
-  optionCount: number
-  difficulty: 1 | 2 | 3 | 4 | 5
+Matrix3x3Puzzle { type: '3x3', cells: ShapeConfig[][], options, correctIndex, ... }
+Matrix2x2Puzzle { type: '2x2', ... }  // generator/UI HENÜZ YOK
+SeriesPuzzle    { type: 'series', cells: ShapeConfig[], ... }  // generator/UI HENÜZ YOK
+OddOneOutPuzzle { type: 'odd-one-out', options: ShapeConfig[], correctIndex, ... }
+PatternCompletionPuzzle {
+  type: 'pattern-completion',
+  motifs: ShapeConfig[],
+  pattern: number[][],                 // büyük grid, her hücre motif index'i
+  blank: { row, col, rows, cols },
+  fragmentOptions: number[][][],       // her seçenek bir mini grid
+  correctIndex,
 }
+
+type PuzzleItem = ...union of all above
 ```
 
 ### SavedTest (Dexie)
 ```ts
 interface SavedTest {
-  id?: number                       // auto-increment
+  id?: number
   name: string
-  description?: string
-  shape: ShapeKind | 'mixed'        // 'mixed' = Mixer-built test
+  shape: ShapeKind | 'mixed'           // 'mixed' = Mixer ile yapılmış
   rule: RuleKind | 'mixed'
   count: number
   seed: number
-  puzzles: Matrix3x3Puzzle[]
+  puzzles: PuzzleItem[]
   createdAt: number
-  sources?: MixerSource[]           // Mixer ile yapılanlar için: kaynak testler + çekilen sayılar
-}
-
-interface MixerSource {
-  testId: number
-  testName: string
-  drawn: number
+  sources?: MixerSource[]              // Mixer kaynağı
 }
 ```
 
 ---
 
-## 🧠 Kritik Kavramlar — Şıkların Benzersizliği
+## 🧠 Kritik Kavramlar — Görsel Benzersizlik
 
-Bu projenin **en zor problemi** ve en titiz çözülen yeri burası. Yeni Claude'un bunu kavraması şart.
+Bu **projenin kalbi** — dedup ve şık ayrıştırması bunlar üzerine kurulu.
 
-### 1. `visualSignature(s: ShapeConfig): string`
+### 1. `visualSignature(s: ShapeConfig): string` (`generator.ts`)
 
-"İki şekil **gözle aynı** mı?" sorusunu cevaplar. Rotasyonu **simetri fold'una göre normalize eder**:
+"Bu iki şekil **gözle aynı** mı?" sorusunu cevaplar. Rotasyonu simetri fold'una göre normalize eder, params + tüm görsel özellikleri serileştirir.
 
 ```ts
 const fold = rotationSymmetryFold(s)
@@ -194,260 +261,327 @@ return `${s.kind}(sz=${s.size},rot=${effRot},sw=${s.strokeWidth},stk=${s.stroke}
 
 ### 2. `rotationSymmetryFold(s): number`
 
-Her şekil için N-fold simetri değerini döner:
+Her şekil için N-fold simetri:
 
 | Şekil | Fold | Açıklama |
 |---|---|---|
-| annulus | 360 | Tam simetrik (daireler) → rotasyon görünmez |
-| dice (1,4,5,8,9 nokta) | 4 | 90° simetrik |
-| dice (2,3,6,7 nokta) | 2 | Sadece 180° simetrik |
-| polygon | `params.sides` | n-fold |
-| star | `params.points` | n-fold |
-| arrow | 1 | Asimetrik (yön matters!) |
-| petals | `params.petalCount` | n-fold |
-| spike-ring | `params.spikeCount` | n-fold |
+| `annulus` | 360 | Tam simetrik (daireler) |
+| `dice` (1,4,5,8,9) | 4 | 90° simetrik |
+| `dice` (2,3,6,7) | 2 | 180° simetrik |
+| `polygon`, `star`, `petals`, `spike-ring`, `nested-polygon` | `params.X` veya `min(o,i)` | n-fold |
+| `arrow`, `hammer` | 1 | Asimetrik |
+| `bars` | 2 | Paralel çizgiler 180° simetrik |
+| `grid-dots` | 4 (rows==cols) veya 2 | Grid simetri |
+| `checkerboard`, `box-lines`, `sector-pie` | 1 | Pattern-bağımlı, konservatif |
 
-> ⚠ Yeni şekil eklerken bu listeyi MUTLAKA güncelle.
+### 3. `makeDistinctDistractors(rng, correct, siblings, count)` (`generator.ts`)
 
-### 3. `makeDistinctDistractors(rng, correct, siblings, count)`
+Distractor üretirken `visualSignature` çakışma kontrolü. 7 tier'lı candidate pool:
 
-Distractor üretirken çakışma yapanı atar. Sırasıyla:
-1. Siblings (zaten dağıtılan varyantlar) → eklenir
-2. `candidatePerturbations(correct)`'tan **tier sırasıyla** dene (Tier 1 → Tier 7)
-3. Her aday için `visualSignature` çakışıyor mu? Hayır ise ekle.
+| Tier | Tweak |
+|---|---|
+| 1 | `paramTweaks(correct, 1)` — primary count ±1 |
+| 1.5 | **Hammer için**: markerPos perturbation |
+| 2 | Renk değişimi (STROKE_PALETTE) |
+| 3 | Büyük size delta (×0.55 veya ×1.25) |
+| 4 | `paramTweaks(correct, 2)` |
+| 5 | Fill aç/kapat |
+| 6 | Rotasyon (sadece fold<4) |
+| 7 | strokeWidth ±2-3 |
 
-### 4. `candidatePerturbations` — 7 Tier
+Tier sırasına göre denenir, ilk benzersiz seçilir.
 
-| Tier | Tweak | Görsel etki |
-|---|---|---|
-| 1 | `paramTweaks(correct, 1)` — primary ±1 | En yüksek |
-| 2 | Renk değişimi | Çok belirgin |
-| 3 | Boyut ×0.55 veya ×1.25 | Belirgin |
-| 4 | `paramTweaks(correct, 2)` — primary ±2 | Belirgin |
-| 5 | Dolgu aç/kapat | Orta |
-| 6 | Rotasyon (sadece fold < 4) | Şekle bağlı |
-| 7 | strokeWidth | En subtle |
+### 4. `PRIMARY_PARAM` haritası
 
-`makeDistinctDistractors` artık **karıştırma yapmaz** — sırayla geçer, böylece Tier 1 her zaman önce denenir.
-
-### 5. `PRIMARY_PARAM` Haritası
-
-Her şeklin "ana sayım parametresi":
+Her şeklin "ana sayım parametresi" — aritmetik kuralları (addition/subtraction/multiplication) bunu kullanır.
 
 ```ts
-const PRIMARY_PARAM: Record<ShapeKind, { name, min, max } | null> = {
-  annulus:      { name: 'ringCount',  min: 1, max: 4  },
-  dice:         { name: 'dotCount',   min: 1, max: 9  },
-  polygon:      { name: 'sides',      min: 3, max: 8  },
-  star:         { name: 'points',     min: 4, max: 10 },
-  petals:       { name: 'petalCount', min: 3, max: 12 },
-  'spike-ring': { name: 'spikeCount', min: 4, max: 16 },
-  arrow:        null,   // count param yok, rotation primary
-  'box-lines':  null,
-}
+{ annulus: 'ringCount', dice: 'dotCount', polygon: 'sides',
+  star: 'points', petals: 'petalCount', 'spike-ring': 'spikeCount',
+  bars: 'barCount', 'grid-dots': 'rows',
+  'nested-polygon': 'outerSides', 'sector-pie': 'sectorCount',
+  arrow: null, hammer: null, checkerboard: null, 'box-lines': null }
 ```
 
-> Aritmetik (addition/subtraction) sadece `null` olmayan şekillerde çalışır.
+`null` olanlar `COUNT_PARAM_SHAPES`'e dahil değil → aritmetik kurallar uygulanmaz.
 
-### 6. `SECONDARY_AXES_BY_SHAPE` (Progression için)
+### 5. `isPuzzleValid(p: PuzzleItem): boolean` (`bulk.ts`)
 
-Progression kuralında **secondary axis** (satır eksen) seçimi şekil-aware:
+Tip-aware doğrulama:
+- **3×3 dist-of-3**: row 0'da 3 distinct hücre
+- **3×3 progression**: hem row 0 hem col 0'da 3 distinct
+- **3×3 addition/subtraction/multiplication**: her satır 3 distinct
+- **3×3 dist-of-2**: her satır 1 blank + 2 distinct shape
+- **odd-one-out**: tam 1 farklı sig, diğer N-1 aynı sig
+- **pattern-completion**: `isPatternCompletionValid` (fragment options pairwise distinct)
+
+### 6. Sector-Pie Pattern Encoding (`generator.ts` helpers)
+
+Sektör başına 3 bit, 8 sektör → 24-bit packed number:
 
 ```ts
-{
-  annulus:      ['size', 'strokeWidth'],
-  dice:         ['size'],                // strokeWidth zarda subtle, hariç
-  polygon:      ['size', 'strokeWidth'],
-  star:         ['size', 'strokeWidth'],
-  arrow:        ['size'],                // strokeWidth ok'ta subtle, hariç
-  petals:       ['size', 'strokeWidth'],
-  'spike-ring': ['size', 'strokeWidth'],
-}
+packSectorPatterns(patterns: number[]): number
+unpackSectorPatterns(packed: number, count: number): number[]
+patternsToFillMask(packed, count): number   // boolean ops için
+fillMaskToUniformPatterns(mask, count, patternId=1): number   // sonuç construct
 ```
 
-### 7. `isPuzzleValid(p)` — Son Güvenlik Ağı
+Pattern ID'ler: 0=empty, 1=solid, 2=dots, 3=hlines, 4=vlines, 5=diag\\, 6=diag/, 7=cross-hatch.
 
-bulk.ts'te. Her bulmaca kaydedilmeden önce:
+**Backward compat**: `params.fillMask` (eski) varsa, SectorPie renderer otomatik patterns[1]'e çevirir.
+
+### 7. Blank Cell Sentinel (`dist-of-2` için)
 
 ```ts
-// 1. Şıklar pairwise distinct (visualSignature ile)
-// 2. dist-of-3: row 0 = 3 distinct
-// 3. progression: row 0 VE col 0 = 3 distinct (her iki eksen görünür)
-// 4. addition/subtraction: her satır = 3 distinct (a≠b≠c)
+blankCellConfig(): ShapeConfig   // params.blank = 1, kind='annulus' arbitrarily
+isBlankCell(s): boolean           // s.params.blank === 1
 ```
 
-Eşleşme varsa bulmaca **atılır, yenisi denenir**.
+`PuzzleGrid` blank hücreyi **kesik çerçeve ile boş** render eder.
+
+### 8. Calibrated Difficulty (`difficulty.ts`)
+
+`bulk.ts`'te her üretilen puzzle'a `p.difficulty = calibrateDifficulty(p)` uygulanır. RULE_LOAD + SHAPE_BONUS + optionAdjust formülü.
 
 ---
 
-## 🌱 Yeni Şekil Eklemenin 11 Adımı
+## 🌱 Yeni Şekil Eklemenin Adımları
 
 1. `src/types/puzzle.ts` → `ShapeKind` union'a ekle
-2. `src/components/shapes/Foo.tsx` → SVG bileşeni yaz
-3. `src/components/shapes/Shape.tsx` → dispatcher switch'e ekle
+2. `src/components/shapes/Foo.tsx` → SVG component'ı
+3. `src/components/shapes/Shape.tsx` → import + `case 'foo': return <Foo .../>`
 4. `src/logic/generator.ts`:
-   - `randomFooVariants(rng)` fonksiyonu (4 farklı axis için switch)
+   - `rotationSymmetryFold` switch'e case
+   - `PRIMARY_PARAM` map'e (varsa count param)
+   - `SECONDARY_AXES_BY_SHAPE` map'e (size/strokeWidth)
+   - `randomBaseShape` switch'e
+   - `randomFooVariants(rng)` fonksiyonu yaz
    - `VARIANT_GENERATORS` map'e ekle
-   - `PRIMARY_PARAM` map'e ekle (varsa count param)
-   - `rotationSymmetryFold` switch'e ekle
-   - `SECONDARY_AXES_BY_SHAPE` map'e ekle
-   - `randomBaseShape` switch'e ekle
-   - `pickPrimaryProgression` switch'e ekle (progression desteği için)
-5. `src/logic/bulk.ts` → `ALL_SHAPES` ve (count varsa) `COUNT_PARAM_SHAPES`'e ekle
-6. `src/pages/Generate.tsx` → `SHAPE_OPTIONS` dropdown'a ekle
+   - `pickPrimaryProgression` switch'e
+5. `src/logic/bulk.ts`:
+   - `ALL_SHAPES`'e ekle
+   - (varsa) `COUNT_PARAM_SHAPES`, `DIST_OF_2_SHAPES`, `MIRROR_SHAPES`, `BOOL_OP_SHAPES`, `ROTATION_ONLY_SHAPES`
+6. `src/pages/Generate.tsx` → `SHAPE_OPTIONS` dropdown
 
----
+## 🆕 Yeni Mantık Eklemenin Adımları
 
-## 🆕 Yeni Mantık Eklemenin 5 Adımı
-
-1. `src/types/puzzle.ts` → `RuleKind` union'a ekle
-2. `src/logic/generator.ts` → `generateRandomFoo3x3()` yaz
+1. `src/types/puzzle.ts` → `RuleKind` union'a
+2. `src/logic/generator.ts` → `generateRandomFoo3x3()` yaz + export
 3. `src/logic/bulk.ts`:
-   - `SUPPORTED` matrix'e ekle
-   - `bulkGenerate` switch'e case ekle
-   - `isPuzzleValid` genişlet (kurala özgü doğrulama)
-4. `src/pages/Generate.tsx` → `RULE_OPTIONS` dropdown'a ekle
+   - SUPPORTED matrisine `[shape, 'foo']` her uyumlu şekil için
+   - `bulkGenerate` switch'e case
+   - `isPuzzleValid` (kural-spesifik check varsa)
+4. `src/pages/Generate.tsx` → `RULE_OPTIONS` dropdown
+
+## 📐 Yeni Puzzle Tipi Eklemenin Adımları
+
+1. `src/types/puzzle.ts` → yeni `XxxPuzzle` interface + PuzzleItem union'a ekle
+2. `src/logic/xxx.ts` → ayrı dosyada generator (pattern-completion gibi)
+3. `src/components/puzzle/XxxGrid.tsx` veya panel
+4. `src/pages/Player.tsx` → `puzzle.type === 'xxx'` branch (render + option panel)
+5. `src/pages/Generate.tsx` → önizleme paneline branch
+6. `src/pages/Mixer.tsx` → önizleme paneline branch
+7. `src/logic/bulk.ts`:
+   - SUPPORTED genişle
+   - `bulkGenerate` switch
+   - `isPuzzleValid` tip-aware extension
+   - `puzzleSignature` generator.ts'te tip-aware
+8. `src/logic/generator.ts` → `puzzleSignature` switch'e ekle (pattern-completion ve odd-one-out gibi)
 
 ---
 
 ## ⚠ Bilinen Tuzaklar (önceden çözülmüş hatalar)
 
-1. **Rotation distractor on annulus** — daireler simetrik, 90° döndürme görünmez. Çözüm: `rotationSymmetryFold` ile normalize.
-2. **8-nokta zar yanlış kategorideydi** — dış halka 90° simetrik, ama eski kod 180° sayıyordu. Çözüm: `DICE_90_SYMMETRIC = {1,4,5,8,9}`.
-3. **strokeWidth on dice subtle** — sadece dış çerçeve kalınlığını değiştirir, nokta boyutu sabit. Çözüm: zar için `SECONDARY_AXES_BY_SHAPE` listesinden çıkarıldı.
-4. **Aritmetik satırda (1,1,2) ambiguous** — "toplama" mı "ikiye katlama" mı? Çözüm: `sampleArithRows` `a≠b≠c` enforce eder.
-5. **Router state F5'te kaybolur** — Library→Play akışı state ile geçiyor, sayfa yenilenirse puzzles silinir, default samples'a düşer. **TODO**: testId query string'e geçmek.
-6. **PowerShell npm script blocking** — `npm` direkt çalışmaz, `npm.cmd` kullan.
-7. **Tailwind v4 syntax** — `tailwind.config.js` yok, `@import "tailwindcss"` + `@theme { ... }` CSS'te.
+1. **Rotation distractor on annulus**: daireler simetrik → `visualSignature` rotasyonu fold'a göre normalize eder
+2. **Dice 8-nokta yanlış kategoride**: `DICE_90_SYMMETRIC = {1,4,5,8,9}`, `DICE_180_SYMMETRIC = {2,3,6,7}`
+3. **strokeWidth zarda subtle**: dice için `SECONDARY_AXES_BY_SHAPE = ['size']` (strokeWidth hariç). Arrow için de aynı
+4. **Aritmetik satırda (1,1,2) ambiguous**: `sampleArithRows` `a≠b≠c` enforce eder
+5. **Router state F5'te kaybolur**: Library→Play akışı state ile geçiyor, sayfa yenilenirse puzzles silinir → default samples'a düşer. **TODO**: testId query string'e geçmek
+6. **PowerShell npm**: `npm` direkt değil, **`npm.cmd`**
+7. **Tailwind v4**: `tailwind.config.js` YOK, `@import "tailwindcss"` + `@theme` CSS'te
+8. **Adjacent filled cells in Checkerboard merge**: çözüldü — dolu hücreler %12 inset ile çizilir, dış çerçeve her zaman ayrıntılı görünür
+9. **Pattern Completion fillback motif index out-of-bounds**: `pickDistinctFragments` motifCount'la bound'lanır
+10. **SectorPie multi-instance SVG pattern ID conflict**: `useId()` ile her instance'a unique prefix
+11. **Sector-pie `fillMask` legacy → `sectorPatterns`**: SectorPie renderer ikisini de okur (backward compat). Boolean ops için fillMask binary olarak derive edilir.
+12. **`noUnusedLocals: true` TS strict**: import edilip kullanılmayan veya değişken atayıp okunmayan dead code = build hata. Önceden bu yüzden 2 build hatası verdi (`shaftLen`, `randomMotif`, `isDistOf2Compatible`).
+13. **dist-of-2 grid-dots/checkerboard'da görsel karışıklık**: bu iki şeklin kendi iç boşluğu blank cell'le çakışıyor → DIST_OF_2_SHAPES listesinden hariç tutuldu (9 net şekil only)
+14. **dist-of-2 UI'da gizli**: `Generate.tsx RULE_OPTIONS`'da satır yorum içinde — re-enable için uncomment
 
 ---
 
-## 📊 Şu Anki Durum
+## 📊 Şu Anki Durum (Faz İlerlemesi)
 
-### ✅ Tamamlanmış
-- 7 şekil tam çalışıyor
-- 5 mantık tam çalışıyor: identity, dist-of-3, progression, addition, subtraction
-- Tohumlu (seed-based) bulk üretim → reproducible
-- `visualSignature` + `makeDistinctDistractors` + `isPuzzleValid` üçlüsü → görsel uniqueness garantor
-- IndexedDB kütüphanesi: save, list, delete, export JSON, replay
-- Generate → Library → Play akışı
-- **Mixer**: Çoklu kaynak testten N'er soru rastgele çekip karışık test oluşturma. Aynı tohumla aynı karışım reproducible. Karışık test "mixed" shape/rule ile kaydedilir, sources[] ile kaynak izi tutulur.
-- Player: hover tracking + süre ölçümü + CSV export
-- ~32,000+ benzersiz soru üretebilir
+### Tamamlananlar ✅
 
-### 🚧 Yapılacaklar (öncelik sırasıyla)
+- **Faz 1 MVP**: Player, 3×3, identity + dist-of-3, library, mixer, CSV export, deploy
+- **Yeni şekiller**: hammer, bars, grid-dots, checkerboard, box-lines, nested-polygon, sector-pie
+- **Yeni kurallar**: dist-of-2 (gizli), progression, rotation, multiplication, mirror, AND/OR/XOR/XNOR, pattern-completion, odd-one-out
+- **Yeni puzzle tipleri**: pattern-completion, odd-one-out
+- **B6 dinamik difficulty kalibrasyonu**
+- **Sector-pie per-sektör pattern dolguları** (dots/lines/diagonal/cross-hatch)
+- **AND/OR/XOR/XNOR'un hem sector-pie hem checkerboard'da çalışması**
+- **Pattern'in UI'da "Pattern" virtual shape olarak coupling'i**
+- **GitHub Pages otomatik deploy** çalışıyor
 
-| Görev | Etki | Çaba |
-|---|---|---|
-| **testId query string** ile Play sayfası F5-resilient hale | 🔥 | ⚡ |
-| **GitHub Pages deploy** | 🔥🔥🔥 | ⚡ |
-| **JSON Import** kütüphaneye | 🔥 | ⚡ |
-| **Dashboard** (Recharts grafik + hover heatmap) | 🔥🔥 | ⚡⚡ |
-| **Editor** (WYSIWYG tek soru) | 🔥 | ⚡⚡⚡ |
-| **2×2, Seri, Tek-farklı** bulmaca tipleri | 🔥🔥 | ⚡⚡⚡ |
-| **Dist-of-2** (blank cell desteği) | 🔥 | ⚡⚡ |
-| **AND/OR/XOR** mantığı (bit-pattern üzerinden) | 🔥 | ⚡⚡⚡ |
-| **Mirror / Rotation Progression** kuralları | 🔥 | ⚡⚡ |
-| **Box-lines** şekli (legacy Corvus) | 🔥 | ⚡⚡ |
-| **PDF export** (yazdırılabilir A4) | 🔥 | ⚡⚡ |
-| **i18n** (TR/EN dil seçici) | 🔥 | ⚡⚡ |
-| **Tema toggle** (dark/light) | 🔥 | ⚡ |
-| **Mobil dokunmatik** | 🔥 | ⚡⚡ |
+### Kalan İşler ⏳
+
+**Faz A eksikleri (kullanıcı tarafından bilinçli ertelendi)**:
+- **A2**: Series (1×N) puzzle tipi — tip union'da var, generator+UI yok
+- **A3**: 2×2 puzzle tipi — tip union'da var, generator+UI yok
+
+**Faz C — akademik / portfolyo cilası**:
+- **C1**: Analogy (A:B::C:?) puzzle tipi + set-operations kuralı
+- **C2**: letter-glyph + wave-line şekilleri + modulo kuralı
+- **C3**: Item Analysis Dashboard (Recharts: hover heatmap, RT histogramı, item difficulty grafiği)
+- **C4**: IRT estimator (Rasch 1PL parametre tahmini, makale altyapısı)
+
+**Polish**:
+- testId-based routing (F5-resilient Library→Play)
+- JSON import (kütüphaneye dışarıdan dosya yükleme)
+- Tema toggle (dark/light)
+- i18n (TR/EN)
+- Mobil dokunmatik
+- PDF export (yazdırılabilir A4)
 
 ---
 
 ## 🤝 Kullanıcı ile İletişim Stili
 
-- **Dil**: Türkçe (Claude da Türkçe cevaplar)
-- **Yaklaşım**: Kullanıcı "neden"i anlamak ister, sadece "ne" yetmez
-- **Tempo**: Hızlı ilerlemeyi sever; her adımda görsel doğrulama yapar
-- **İzlenmesi gereken davranış**: Yeni özellik eklerken hep "şıklar benzersiz mi?" sorusuna geri döner — `visualSignature` kontrolünü ihmal etme
-- **Ekran görüntüsü ile debug** — kullanıcı genelde sorunu screenshot ile gösterir, kodda root cause bulmak gerek
+- **Dil**: Türkçe (kullanıcı her zaman Türkçe yazar, Claude da Türkçe cevaplar)
+- **Yaklaşım**: "Neden"i istiyor, sadece "ne" değil
+- **Tempo**: Hızlı; her adımda görsel doğrulama yapar (ekran görüntüsü gönderir)
+- **Push tercihleri**: Bazen "local'de göster, push yok" diye spesifik ister — saygı göster
+- **Önemli kontroller**: Kullanıcı sıklıkla "şıklar benzersiz mi?" diye soruyor — `visualSignature` mekanizmasını her yeni özelliğe dahil et
+- **Onay döngüsü**: Önemli mimari kararlardan önce `AskUserQuestion` ile sor
 
 ---
 
-## 🗺 Mimari Diyagram
+## 🗺 Mimari Akış Diyagramı
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  src/pages/                                             │
-│  Home → Player ←──────┐                                 │
-│   │      ↑            │                                 │
-│   │      │ router     │ "Oyna" + state                  │
-│   │      │ state      │                                 │
-│   ↓      │            ↑                                 │
-│  Generate ───────→ Library                              │
-│   │                  ↑                                  │
-│   │ "Kaydet"          │ listTestsMeta + getTest         │
-│   ↓                  │                                  │
-│  ┌─────────────────────────────────────────────────────┐│
-│  │ src/db/dexie.ts — IndexedDB                          │
-│  │ tests: { id, name, shape, rule, count, seed,         │
-│  │          puzzles, createdAt }                         │
-│  └─────────────────────────────────────────────────────┘│
-│                                                          │
-│  Generate butonu →                                       │
-│  ┌─────────────────────────────────────────────────────┐│
-│  │ src/logic/bulk.ts — bulkGenerate(spec)               │
-│  │   ↓ for-loop until count                              │
-│  │   src/logic/generator.ts                              │
-│  │     • generateRandomIdentity                          │
-│  │     • generateRandomDistOf3                           │
-│  │     • generateRandomProgression3x3                    │
-│  │     • generateRandomArithmetic3x3                     │
-│  │       ↓ each uses                                     │
-│  │     • randomBaseShape(kind, rng)                      │
-│  │     • makeDistinctDistractors                         │
-│  │     • visualSignature                                 │
-│  │   ↓ filter via                                        │
-│  │   isPuzzleValid(p)                                    │
-│  │   ↓ dedup via                                         │
-│  │   puzzleSignature(p) set                              │
-│  └─────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────┘
+                           ┌──────────────────────────┐
+                           │      pages/Home.tsx       │
+                           │  4 kart navigasyonu      │
+                           └─────────┬────────────────┘
+                                     │
+        ┌──────────────────┬─────────┼─────────┬──────────────────┐
+        │                  │         │         │                  │
+        ↓                  ↓         ↓         ↓                  ↓
+   /generate           /mixer    /library    /play             /editor
+        │                  │         │         │              (yer tutucu)
+        │                  │         │         │
+        │ bulkGenerate     │ getTest │ getTest │ Player render switch
+        │                  │         │         │  ├─ 3×3 → PuzzleGrid + OptionPanel
+        │                  │         │         │  ├─ pattern-completion → Pattern… + Fragment…
+        │                  │         │         │  └─ odd-one-out → (no grid) + OddOneOutPanel
+        ↓                  ↓         ↓         ↓
+   ┌──────────────────────────────────────────────────┐
+   │  logic/bulk.ts — bulkGenerate(spec)              │
+   │   ↓                                              │
+   │   for-loop generateOne() (rule switch):          │
+   │     • generateRandomIdentity                     │
+   │     • generateRandomDistOf3                      │
+   │     • generateRandomDistOf2                      │
+   │     • generateRandomProgression3x3               │
+   │     • generateRandomRotation3x3                  │
+   │     • generateRandomArithmetic3x3 (+/-/*)        │
+   │     • generateRandomMirror3x3                    │
+   │     • generateRandomBoolOp3x3 (AND/OR/XOR/XNOR)  │
+   │     • generateRandomPatternCompletion            │
+   │     • generateRandomOddOneOut                    │
+   │   ↓                                              │
+   │   calibrateDifficulty(p) → p.difficulty          │
+   │   ↓                                              │
+   │   isPuzzleValid(p) filter                        │
+   │   ↓                                              │
+   │   puzzleSignature(p) → Set dedup                 │
+   └──────────────────────────────────────────────────┘
+        │
+        ↓
+   ┌──────────────────────────────────────────────────┐
+   │  db/dexie.ts — IndexedDB 'cogitem' database      │
+   │  tests: { id, name, shape, rule, count, seed,    │
+   │           puzzles: PuzzleItem[], createdAt,      │
+   │           sources?: MixerSource[] }              │
+   └──────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🎨 Stil Kuralları (CSS değişkenleri)
-
-`src/index.css`'te `@theme` bloğu ile tanımlı:
+## 🎨 CSS Değişkenleri (`index.css`)
 
 ```css
---color-bg          #0f0f12   (sayfa arkaplanı)
---color-surface     #1a1b22   (kart arkaplanı)
---color-surface-2   #23252e   (iç kart/hücre)
+--color-bg          #0f0f12
+--color-surface     #1a1b22
+--color-surface-2   #23252e
 --color-border      #2e303a
 --color-text        #e4e4e7
 --color-text-muted  #9ca3af
---color-accent      #a78bfa   (mor — primary CTA)
+--color-accent      #a78bfa
 --color-accent-hover #8b5cf6
---color-success     #34d399   (yeşil — doğru cevap)
---color-danger      #f87171   (kırmızı — yanlış cevap)
+--color-success     #34d399
+--color-danger      #f87171
 ```
 
-> Tailwind class'ında `bg-[var(--color-surface)]` formuyla kullanılıyor. Stil tutarlılığı için yeni renkler eklerken bu blokta tanımla.
+`bg-[var(--color-surface)]` formuyla kullanılır.
+
+### STROKE_PALETTE (mantık renkleri) — `generator.ts`
+```
+#e4e4e7 (light gray, default)
+#a78bfa (purple), #34d399 (green), #f59e0b (amber), #60a5fa (blue)
+```
+
+### MOTIF_COLORS (pattern-completion için) — `patternCompletion.ts`
+```
+#a78bfa #34d399 #f59e0b #60a5fa #ec4899 #06b6d4 #84cc16 #f87171
+```
 
 ---
 
 ## 📜 Önemli Karar Kayıtları
 
-1. **HashRouter > BrowserRouter** — GitHub Pages gibi statik sunucularda server-side rewrite gerektirmez. `#/play`, `#/generate` gibi URL'ler.
-2. **Vite `base: './'`** — relative path build, statik deploy için zorunlu.
-3. **Dexie tek satırda denormalize puzzles[]** — 1000 puzzle'lık bir test ~150KB. IndexedDB rahat kaldırır. Tek sorguda yüklenir.
-4. **`listTestsMeta` ayrı endpoint** — Library liste sayfası `puzzles[]` yüklemez, sadece metadata. Play tıklanınca `getTest(id)` ile full row çekilir.
-5. **mulberry32 PRNG** — küçük, hızlı, integer-seedable. Reproducibility için kritik.
-6. **rule-specific distractors yerine generic** — `makeDistinctDistractors` her kural için aynı şekilde çalışır, sadece "siblings" parametresi farklı sağlanır (örn. progression için grid neighbors).
+1. **HashRouter** seçildi (BrowserRouter yerine) → GitHub Pages gibi statik sunucularda server-side rewrite gerek değil
+2. **Vite `base: './'`** — statik deploy için zorunlu relative paths
+3. **Dexie tek satırda denormalize `puzzles[]`** — basit, 1000 puzzle ~150KB
+4. **`listTestsMeta`** ayrı endpoint → Library listesi puzzles[] yüklemez (perf)
+5. **mulberry32** PRNG — küçük, hızlı, integer-seedable
+6. **Pattern Completion ayrı dosya** (`patternCompletion.ts`) — generator.ts'i şişirmemek için
+7. **'pattern' UI virtual shape** — ShapeKind union'a eklenmedi (tip kirliliği), Generate.tsx'te lokal `ShapeUiValue` tipi
+8. **Sector-pie patterns 3-bit/sektör encoding** — array yerine packed number (params: Record<string,number> kısıtı)
+9. **Blank cell sentinel `params.blank = 1`** — `cells: (ShapeConfig | null)[][]` yerine (tip değişikliği invasive olurdu)
+10. **'pattern' shape'i `effectiveShape: 'polygon'`'a substitute** — bulkGenerate ShapeKind beklediği için
+11. **`useId()` SVG pattern ID'leri için** — React 18+ hook, multi-instance unique
+12. **B6 difficulty bulk.ts'te override** — her generator ayrı difficulty veriyor, merkezi kalibrasyon ile bypass
+13. **Boolean ops sector-pie + checkerboard** — bit-mask carrier'lar; diğer şekiller count-based
+14. **dist-of-2 UI'da gizli** ama implementasyon kalıyor — kullanıcı erteledi
 
 ---
 
 ## 🚀 Yeni Bir Oturuma Başlarken (Claude için)
 
-1. **Önce bu dosyayı sonuna kadar oku.**
-2. `src/types/puzzle.ts`'i oku — tüm veri modeli orada.
-3. `src/logic/generator.ts`'in başını ve `rotationSymmetryFold`, `visualSignature`, `makeDistinctDistractors`'ı oku — sistemin kalbi.
-4. Kullanıcının ne istediğini anla; "yeni şekil" mi yoksa "yeni mantık" mı, ya da başka bir şey mi.
-5. Yukarıdaki "Yeni Şekil/Mantık Ekleme" kontrol listelerini takip et.
-6. Build doğrula (`npm.cmd run build`) — TypeScript hataları yakalanır.
-7. Kullanıcıya tarayıcıda nasıl test edeceğini söyle (genelde `/generate`'te seed verip preview'da gez).
-8. Şıkların görsel olarak benzersiz olduğunu kullanıcıya **özellikle doğrulat** — bu projenin en hassas noktası.
+1. **Bu dosyayı sonuna kadar oku.**
+2. `src/types/puzzle.ts` → veri modeli
+3. `src/logic/generator.ts` → `visualSignature`, `rotationSymmetryFold`, `makeDistinctDistractors`, `PRIMARY_PARAM` — sistemin kalbi
+4. `src/logic/bulk.ts` → SUPPORTED matrix + `isPuzzleValid` — orchestration
+5. Kullanıcı isteğini anla (Türkçe). Yeni şekil mi, kural mı, format mı?
+6. "Yeni X Ekleme Adımları" listelerini takip et
+7. **`npm.cmd run build`** ile TypeScript doğrula
+8. Her yeni özellikten sonra **görsel uniqueness'i kullanıcıya doğrulat**
+9. Push politikası: kullanıcı "push" demedikçe `git push` yapma, sadece local commit
+10. Commit mesajları başına faz/madde belirt (ör. "B5: Add odd-one-out")
+
+---
+
+## 📦 Eklenmeyen Ama Önemli Olabilecek
+
+- **Test coverage** yok — manuel test ediyoruz
+- **Lint** kurulu (`npm.cmd run lint`) ama her commit'te çağırılmıyor
+- **CI tests** yok — sadece GitHub Actions build+deploy
+- **Type-safe SUPPORTED**: array literal, exhaustive değil — yanlış kombinasyon eklenirse runtime fark eder
+- **i18n**: tüm string'ler Türkçe hardcode
+
+---
+
+**Son güncelleme**: ~~14 Mayıs 2026~~ (kullanıcı compact yapacak, bu commit'e bak)
+**Son commit**: `b8a8670` (Bool ops + checkerboard)
+**Toplam local commit**: 8+ (Faz B'nin tamamı)
