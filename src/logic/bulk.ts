@@ -30,6 +30,7 @@ import {
   puzzleSignature,
   visualSignature,
 } from './generator'
+import { calibrateDifficulty } from './difficulty'
 import {
   generateRandomPatternCompletion,
   isPatternCompletionValid,
@@ -189,6 +190,11 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
       invalidSkipped++
       continue
     }
+
+    // B6: Override the static difficulty each generator emitted with a
+    // calibrated value based on rule+shape+optionCount. This makes Library
+    // and CSV exports show meaningful difficulty stratification.
+    p.difficulty = calibrateDifficulty(p)
 
     // Validity: ensure the answer options are pairwise visually distinct
     // and that the rule is actually visible (i.e., for dist-of-3 the row
