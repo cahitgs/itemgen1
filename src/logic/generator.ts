@@ -33,7 +33,7 @@ const nextId = (rng: Rng) => `puz-${Math.floor(rng() * 1e9).toString(36)}-${_cou
 // Style palettes (small but extensible)
 // ──────────────────────────────────────────────────────────────
 
-const STROKE_PALETTE = [
+export const STROKE_PALETTE = [
   '#e4e4e7', // light gray (default)
   '#a78bfa', // accent purple
   '#34d399', // green
@@ -1128,7 +1128,7 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
  * Map shape kind → the primary integer param name + its valid range.
  * Used by paramTweaks to perturb the shape's most-visible discrete property.
  */
-const PRIMARY_PARAM: Record<
+export const PRIMARY_PARAM: Record<
   ShapeKind,
   { name: string; min: number; max: number } | null
 > = {
@@ -1260,7 +1260,7 @@ function candidatePerturbations(
  * puzzles include the "other two variants" by design). Then fills the rest
  * from random perturbations of the correct shape.
  */
-function makeDistinctDistractors(
+export function makeDistinctDistractors(
   rng: Rng,
   correct: ShapeConfig,
   siblings: ShapeConfig[],

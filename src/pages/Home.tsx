@@ -37,6 +37,17 @@ export function Home() {
           </Link>
 
           <Link
+            to="/editor"
+            className="block p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
+          >
+            <div className="text-3xl mb-2">✏️</div>
+            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">Özel Soru Oluştur</h2>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Hücre hücre elle tasarla. Şekil, renk, döndürme, parametreler — tam kontrol.
+            </p>
+          </Link>
+
+          <Link
             to="/mixer"
             className="block p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
           >
@@ -49,7 +60,7 @@ export function Home() {
 
           <Link
             to="/library"
-            className="block p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
+            className="block md:col-span-2 p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
           >
             <div className="text-3xl mb-2">📚</div>
             <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">Kütüphane</h2>
@@ -60,8 +71,8 @@ export function Home() {
         </div>
 
         <p className="text-xs text-[var(--color-text-muted)] mt-12 opacity-60">
-          7 şekil · 5 mantık (Identity, Dist-of-3, Progression, Addition, Subtraction) ·
-          tohumlu toplu üretim · kütüphane · CSV sonuç dışa aktarımı
+          14 şekil · 15 mantık (Identity, Dist-of-3/2, Progression, Rotation, Mirror, ±×, AND/OR/XOR/XNOR, Pattern Completion, Odd-One-Out) ·
+          3 puzzle tipi · manuel editör · tohumlu toplu üretim · CSV dışa aktarım
         </p>
       </div>
     </div>
