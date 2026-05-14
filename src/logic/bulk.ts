@@ -202,7 +202,7 @@ export function downloadPuzzlesJson(
 ): void {
   const payload = {
     meta: {
-      generator: 'neocorvus',
+      generator: 'cogitem',
       generatedAt: new Date().toISOString(),
       spec,
       seed: result.seed,
@@ -217,7 +217,7 @@ export function downloadPuzzlesJson(
   const link = document.createElement('a')
   link.href = url
   link.download =
-    filename ?? `neocorvus-${spec.shape}-${spec.rule}-${result.puzzles.length}-s${result.seed}.json`
+    filename ?? `cogitem-${spec.shape}-${spec.rule}-${result.puzzles.length}-s${result.seed}.json`
   link.style.display = 'none'
   document.body.appendChild(link)
   link.click()

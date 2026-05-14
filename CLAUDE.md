@@ -1,4 +1,7 @@
-# NeoCorvus — Claude'a Notlar
+# Cogitem — Claude'a Notlar
+
+> Eski adı **NeoCorvus**. Şu an **Cogitem** (cogito + item). Repo adı `itemgen1`.
+> Geçmiş kayıtların IndexedDB'si `'neocorvus'`'tu, şimdi `'cogitem'`.
 
 > Bu dosya yeni bir Claude oturumunun **projeye 5 dakikada vakıf olmasını** sağlamak için yazıldı. Aşağıdan kronolojik (özet → detay) okumayı öner.
 
@@ -6,7 +9,7 @@
 
 ## 🎯 30 Saniyelik Özet
 
-**NeoCorvus**, Raven Progressive Matrices tarzı non-verbal bilişsel testlerin **modern, tarayıcı-yerel** üreticisi ve oynatıcısı. [Isaac Thimbleby'nin Corvus](https://github.com/Thimbleby/Corvus) projesinden esinlenmiş, sıfırdan React + TypeScript ile yeniden yazılmış.
+**Cogitem** (önceki adı NeoCorvus), Raven Progressive Matrices tarzı non-verbal bilişsel testlerin **modern, tarayıcı-yerel** üreticisi ve oynatıcısı. [Isaac Thimbleby'nin Corvus](https://github.com/Thimbleby/Corvus) projesinden esinlenmiş, sıfırdan React + TypeScript ile yeniden yazılmış. İsmin etimolojisi: *cogito* (Latince "düşünüyorum") + *item* (test öğesi).
 
 - **Kullanıcı**: Türkçe konuşur, portfolyo projesi olarak geliştiriyor
 - **Hedef**: Tek tıkla binlerce benzersiz soru üretebilen, tarayıcıda çalışan, paylaşılabilir bir test platformu

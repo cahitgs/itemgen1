@@ -1,6 +1,8 @@
-# NeoCorvus
+# Cogitem
 
-Modern, tarayıcıda çalışan **non-verbal bilişsel test üreteci ve oynatıcısı**.
+> *Cogito ergo item* — düşünüyorum, öyleyse bulmaca var.
+
+Tarayıcıda çalışan **non-verbal bilişsel test üreteci ve oynatıcısı**.
 Raven'ın Progressive Matrices'ine benzer 3×3 görsel-mantıksal bulmacalar üretir,
 karıştırır, oynatır.
 
@@ -23,7 +25,7 @@ karıştırır, oynatır.
 
 ## Eski Corvus'tan Farkı
 
-| Eski Corvus | NeoCorvus |
+| Eski Corvus | Cogitem |
 | --- | --- |
 | D3 v3 + jQuery (2013), Edge çalışmaz | React 19 + TypeScript, tüm modern tarayıcılar |
 | `txt indir → klasör değiştir → yeniden adlandır` akışı | Tek tıkla oyna, sonuç CSV |

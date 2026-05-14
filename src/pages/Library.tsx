@@ -56,7 +56,7 @@ export function Library() {
       if (!test) return
       const payload = {
         meta: {
-          generator: 'neocorvus',
+          generator: 'cogitem',
           exportedAt: new Date().toISOString(),
           name: test.name,
           shape: test.shape,

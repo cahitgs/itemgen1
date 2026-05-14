@@ -1,5 +1,5 @@
 /**
- * Core type definitions for NeoCorvus puzzles.
+ * Core type definitions for Cogitem puzzles.
  *
  * Design goals (vs. Corvus's opaque [[3,3],[0],[2],...] arrays):
  *   - Self-describing field names

@@ -38,11 +38,11 @@ export interface SavedTest {
  */
 export type SavedTestMeta = Omit<SavedTest, 'puzzles'>
 
-class NeoCorvusDB extends Dexie {
+class CogitemDB extends Dexie {
   tests!: EntityTable<SavedTest, 'id'>
 
   constructor() {
-    super('neocorvus')
+    super('cogitem')
     // Indexed fields: name (search), shape+rule (filter), createdAt (sort).
     this.version(1).stores({
       tests: '++id, name, shape, rule, createdAt',
@@ -50,7 +50,7 @@ class NeoCorvusDB extends Dexie {
   }
 }
 
-export const db = new NeoCorvusDB()
+export const db = new CogitemDB()
 
 // ──────────────────────────────────────────────────────────────
 // CRUD helpers (Dexie returns Promises; UI awaits these directly).

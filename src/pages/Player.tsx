@@ -91,7 +91,7 @@ export function Player() {
   }
 
   function downloadCsv() {
-    exportAnswersToCsv(answers, `neocorvus-results-${Date.now()}.csv`)
+    exportAnswersToCsv(answers, `cogitem-results-${Date.now()}.csv`)
   }
 
   if (status === 'done') {

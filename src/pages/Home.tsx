@@ -5,11 +5,12 @@ export function Home() {
     <div className="min-h-screen flex items-center justify-center p-8">
       <div className="max-w-3xl w-full">
         <h1 className="text-5xl font-light mb-4 text-[var(--color-text)]">
-          NeoCorvus
+          Cogitem
         </h1>
         <p className="text-lg text-[var(--color-text-muted)] mb-12">
-          Modern, kullanıcı dostu non-verbal bilişsel test üreteci ve oynatıcısı.
-          Raven'ın Progressive Matrices'ine benzer 3×3 görsel-mantıksal bulmacalar.
+          <em>Cogito ergo item</em> — non-verbal bilişsel test üreteci.
+          Raven Progressive Matrices tarzı 3×3 görsel-mantıksal bulmacalar,
+          binlerce benzersiz soru, tek tıkla.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
