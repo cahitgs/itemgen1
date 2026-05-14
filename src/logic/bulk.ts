@@ -23,6 +23,7 @@ import {
   generateRandomDistOf3,
   generateRandomIdentity,
   generateRandomMirror3x3,
+  generateRandomOddOneOut,
   generateRandomProgression3x3,
   generateRandomRotation3x3,
   isBlankCell,
@@ -109,6 +110,8 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...BOOL_OP_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
     [s, 'and'], [s, 'or'], [s, 'xor'], [s, 'xnor'],
   ]),
+  // odd-one-out — works for any shape with a variant generator
+  ...ALL_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'odd-one-out']),
   // Pattern-completion: shape parameter is ignored (the generator picks motifs
   // internally), so we register against every shape so the UI accepts any
   // dropdown combo with this rule.
@@ -159,6 +162,8 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
       case 'xor':
       case 'xnor':
         return generateRandomBoolOp3x3(spec.shape, spec.rule, rng)
+      case 'odd-one-out':
+        return generateRandomOddOneOut(spec.shape, rng)
       case 'pattern-completion':
         return generateRandomPatternCompletion(rng)
       default:
@@ -224,6 +229,23 @@ function isPuzzleValid(p: PuzzleItem): boolean {
   // Pattern completion has its own validator (different cell structure)
   if (p.type === 'pattern-completion') {
     return isPatternCompletionValid(p as PatternCompletionPuzzle)
+  }
+
+  // Odd-one-out: exactly ONE option must differ from the rest visually.
+  // The other N-1 must share a visualSignature.
+  if (p.type === 'odd-one-out') {
+    const sigs = p.options.map(visualSignature)
+    const uniqueSigs = new Set(sigs)
+    if (uniqueSigs.size !== 2) return false
+    // The "majority" signature must appear N-1 times, the odd one once
+    const counts = new Map<string, number>()
+    for (const s of sigs) counts.set(s, (counts.get(s) ?? 0) + 1)
+    const sortedCounts = [...counts.values()].sort((a, b) => b - a)
+    if (sortedCounts[0] !== p.options.length - 1 || sortedCounts[1] !== 1) return false
+    // And the correctIndex must point to the odd one
+    const oddSig = [...counts.entries()].find(([, c]) => c === 1)?.[0]
+    if (sigs[p.correctIndex] !== oddSig) return false
+    return true
   }
 
   // For 3x3 puzzles (and 2x2/series when added), check option distinctness +

@@ -56,6 +56,7 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'or', label: 'OR — col0 ∨ col1 = col2 (Sector Pie)' },
   { value: 'xor', label: 'XOR — col0 ⊻ col1 = col2 (Sector Pie)' },
   { value: 'xnor', label: 'XNOR — ¬(col0 ⊻ col1) = col2 (Sector Pie)' },
+  { value: 'odd-one-out', label: 'Odd-One-Out — farklı olanı bul' },
   { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir?' },
 ]
 
@@ -480,6 +481,10 @@ function ResultPanel({
             <PatternCompletionGrid puzzle={puzzle} cellPx={36} />
           ) : puzzle.type === '3x3' ? (
             <PuzzleGrid puzzle={puzzle} cellPx={90} />
+          ) : puzzle.type === 'odd-one-out' ? (
+            <div className="text-sm text-[var(--color-text-muted)] italic px-4 py-8">
+              Odd-One-Out: tüm seçenekler sağda gösteriliyor
+            </div>
           ) : null}
           <div>
             <p className="text-sm text-[var(--color-text-muted)] mb-2">

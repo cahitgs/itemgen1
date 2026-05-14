@@ -101,6 +101,10 @@ export function isBlankCell(s: ShapeConfig): boolean {
  * which have a different cell structure.
  */
 export function puzzleSignature(p: PuzzleItem): string {
+  if (p.type === 'odd-one-out') {
+    const optSigs = p.options.map(visualSignature).join(';')
+    return `oneout:${p.shape}:${optSigs}#${p.correctIndex}`
+  }
   if (p.type === 'pattern-completion') {
     // Pattern signature: motif kinds + pattern grid + blank position + correct fragment
     const motifSig = p.motifs.map(visualSignature).join(';')
@@ -1925,6 +1929,54 @@ export function generateRandomBoolOp3x3(
     correctIndex,
     optionCount: options.length,
     difficulty: 4,
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Rule: Odd-One-Out
+//
+//   N items shown side by side. (N-1) of them follow a pattern (here: all
+//   identical); ONE breaks the pattern. Player clicks the different one.
+//
+//   No "?" cell, no PuzzleGrid — Player renders a horizontal panel of
+//   clickable options where any one (not a fixed [2][2]) may be the answer.
+// ──────────────────────────────────────────────────────────────
+
+import type { OddOneOutPuzzle } from '../types/puzzle'
+
+export function generateRandomOddOneOut(
+  shape: ShapeKind,
+  rng: Rng = mulberry32(randomSeed()),
+): OddOneOutPuzzle {
+  const baseShape = randomBaseShape(shape, rng)
+  const count = pick(rng, [5, 6])
+
+  // Find a perturbation of baseShape with a visually distinct signature
+  const candidates = candidatePerturbations(baseShape, rng)
+  const baseSig = visualSignature(baseShape)
+  const oddShape = candidates.find((c) => visualSignature(c) !== baseSig)
+  if (!oddShape) {
+    throw new Error(`No visually-distinct perturbation found for ${shape}`)
+  }
+
+  // Build N-1 identical base shapes + 1 odd
+  const items: ShapeConfig[] = []
+  for (let i = 0; i < count - 1; i++) items.push(clone(baseShape))
+  items.push(clone(oddShape))
+
+  // Shuffle so the odd one isn't always last
+  const { result: options, permutation } = shuffleRng(rng, items)
+  const correctIndex = permutation.indexOf(count - 1)
+
+  return {
+    id: nextId(rng),
+    type: 'odd-one-out',
+    rule: 'odd-one-out',
+    shape,
+    options,
+    correctIndex,
+    optionCount: count,
+    difficulty: 2,
   }
 }
 

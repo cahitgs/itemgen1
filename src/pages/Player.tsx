@@ -4,6 +4,7 @@ import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
 import { OptionPanel } from '../components/puzzle/OptionPanel'
 import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
 import { FragmentOptionPanel } from '../components/puzzle/FragmentOptionPanel'
+import { OddOneOutPanel } from '../components/puzzle/OddOneOutPanel'
 import {
   sampleAnnulusIdentity,
   sampleAnnulusDistOf3,
@@ -183,7 +184,7 @@ export function Player() {
             <PatternCompletionGrid puzzle={current} />
           ) : current.type === '3x3' ? (
             <PuzzleGrid puzzle={current} />
-          ) : (
+          ) : current.type === 'odd-one-out' ? null /* odd-one-out has no question grid */ : (
             <div className="text-[var(--color-text-muted)]">
               Bu puzzle tipi henüz desteklenmiyor: {current.type}
             </div>
@@ -192,10 +193,26 @@ export function Player() {
             <p className="text-sm text-[var(--color-text-muted)]">
               {current.type === 'pattern-completion'
                 ? 'Boş alanı dolduran fragment hangisi?'
-                : 'Sağdaki seçeneklerden eksik hücreye uyanı seç:'}
+                : current.type === 'odd-one-out'
+                  ? 'Diğerlerinden farklı olan hangisi?'
+                  : 'Sağdaki seçeneklerden eksik hücreye uyanı seç:'}
             </p>
             {current.type === 'pattern-completion' ? (
               <FragmentOptionPanel
+                puzzle={current}
+                onPick={handlePick}
+                onHover={handleHover}
+                highlightIndex={picked}
+                highlightKind={
+                  picked !== null
+                    ? picked === current.correctIndex
+                      ? 'correct'
+                      : 'wrong'
+                    : undefined
+                }
+              />
+            ) : current.type === 'odd-one-out' ? (
+              <OddOneOutPanel
                 puzzle={current}
                 onPick={handlePick}
                 onHover={handleHover}

@@ -62,6 +62,7 @@ export type RuleKind =
   | 'rotation'        // pure rotation only — sliding window (r+c)×Δ. Asymmetric shapes only.
   | 'mirror'          // row 1 is mirror of row 0 along an axis
   | 'pattern-completion' // big repeating pattern with a blank — "what fills the blank?"
+  | 'odd-one-out'    // N items, one breaks the pattern — pick the different one
   | 'and' | 'or' | 'xor' | 'xnor'  // logic gates on binary cells
 
 // ──────────────────────────────────────────────────────────────
