@@ -9,6 +9,8 @@ import { CubePuzzleGrid } from '../components/cube/CubePuzzleGrid'
 import { CubeOptionPanel } from '../components/cube/CubeOptionPanel'
 import { ReflectionGrid } from '../components/reflection/ReflectionGrid'
 import { ReflectionOptionPanel } from '../components/reflection/ReflectionOptionPanel'
+import { PaperFoldingGrid } from '../components/paperFolding/PaperFoldingGrid'
+import { PaperFoldingOptionPanel } from '../components/paperFolding/PaperFoldingOptionPanel'
 import {
   sampleAnnulusIdentity,
   sampleAnnulusDistOf3,
@@ -192,6 +194,8 @@ export function Player() {
             <CubePuzzleGrid puzzle={current} />
           ) : current.type === 'reflection' ? (
             <ReflectionGrid puzzle={current} />
+          ) : current.type === 'paper-folding' ? (
+            <PaperFoldingGrid puzzle={current} />
           ) : current.type === 'odd-one-out' ? null /* odd-one-out has no question grid */ : (
             <div className="text-[var(--color-text-muted)]">
               Bu puzzle tipi henüz desteklenmiyor: {current.type}
@@ -207,7 +211,9 @@ export function Player() {
                     ? 'Bu yapı oktaki yönden bakıldığında hangi silüetle eşleşir?'
                     : current.type === 'reflection'
                       ? 'Bu şeklin verilen eksendeki ayna görüntüsü hangisidir?'
-                      : 'Sağdaki seçeneklerden eksik hücreye uyanı seç:'}
+                      : current.type === 'paper-folding'
+                        ? 'Kağıt açılınca delikler hangi düzende ortaya çıkar?'
+                        : 'Sağdaki seçeneklerden eksik hücreye uyanı seç:'}
             </p>
             {current.type === 'pattern-completion' ? (
               <FragmentOptionPanel
@@ -267,6 +273,20 @@ export function Player() {
               />
             ) : current.type === 'reflection' ? (
               <ReflectionOptionPanel
+                puzzle={current}
+                onPick={handlePick}
+                onHover={handleHover}
+                highlightIndex={picked}
+                highlightKind={
+                  picked !== null
+                    ? picked === current.correctIndex
+                      ? 'correct'
+                      : 'wrong'
+                    : undefined
+                }
+              />
+            ) : current.type === 'paper-folding' ? (
+              <PaperFoldingOptionPanel
                 puzzle={current}
                 onPick={handlePick}
                 onHover={handleHover}

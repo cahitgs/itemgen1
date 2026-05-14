@@ -34,6 +34,7 @@ const RULE_LOAD: Record<RuleKind, number> = {
   xnor: 5,
   'cube-projection': 4, // 3D mental rotation is cognitively demanding
   reflection: 3,         // 2D mirror imagery — moderate spatial transformation
+  'paper-folding': 4,    // sequential mental folds + reflection — high spatial load
 }
 
 // Per-shape visual complexity bonus. Plain shapes add 0; busy or compound
@@ -56,6 +57,7 @@ const SHAPE_BONUS: Record<ShapeKind, number> = {
   'cube-stack': 1,      // 3D voxel structure adds visual parsing load
   'block-letter': 1,    // asymmetric glyph parsing
   'reflection-source': 1, // virtual; reflection rule already adds load
+  'paper-fold-source': 0, // virtual; paper-folding rule already adds load
 }
 
 /**

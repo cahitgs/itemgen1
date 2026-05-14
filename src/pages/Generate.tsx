@@ -12,6 +12,7 @@ import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGri
 import { CubePuzzleGrid } from '../components/cube/CubePuzzleGrid'
 import { CubeSilhouette } from '../components/cube/CubeSilhouette'
 import { ReflectionGrid } from '../components/reflection/ReflectionGrid'
+import { PaperFoldingGrid, PaperDiagram } from '../components/paperFolding/PaperFoldingGrid'
 import { Shape } from '../components/shapes/Shape'
 import type { ShapeKind, RuleKind } from '../types/puzzle'
 import { saveTest } from '../db/dexie'
@@ -45,6 +46,7 @@ const SHAPE_OPTIONS: Array<{ value: ShapeUiValue; label: string }> = [
   { value: 'cube-stack', label: 'Cube Stack (3D Blok Yığını)' },
   { value: 'block-letter', label: 'Block Letter (Asimetrik F/L/T Glyph)' },
   { value: 'reflection-source', label: 'Reflection (Otomatik karmaşık şekiller)' },
+  { value: 'paper-fold-source', label: 'Paper Folding (Kağıt Katlama)' },
 ]
 
 const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
@@ -66,6 +68,7 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir?' },
   { value: 'cube-projection', label: 'Cube Projection — 3D yapıdan 2D silüet' },
   { value: 'reflection', label: 'Reflection — ayna görüntüsünü bul (sadece asimetrik şekiller)' },
+  { value: 'paper-folding', label: 'Paper Folding — kağıt katlama, delikler nereye gelir?' },
 ]
 
 const COUNT_PRESETS = [10, 100, 1000, 5000]
@@ -93,6 +96,7 @@ export function Generate() {
   // Coupling: 'pattern' shape       ↔ 'pattern-completion' rule
   //           'cube-stack' shape     ↔ 'cube-projection' rule
   //           'reflection-source'    ↔ 'reflection' rule
+  //           'paper-fold-source'    ↔ 'paper-folding' rule
   // When user picks one, the other auto-snaps to the partner so the dropdowns
   // never present incompatible combinations.
   useEffect(() => {
@@ -108,6 +112,10 @@ export function Generate() {
       setRule('reflection')
     } else if (shape !== 'reflection-source' && rule === 'reflection') {
       setShape('reflection-source')
+    } else if (shape === 'paper-fold-source' && rule !== 'paper-folding') {
+      setRule('paper-folding')
+    } else if (shape !== 'paper-fold-source' && rule === 'paper-folding') {
+      setShape('paper-fold-source')
     }
   }, [shape, rule])
 
@@ -124,7 +132,9 @@ export function Generate() {
           ? SHAPE_OPTIONS.filter((o) => o.value === 'cube-stack')
           : rule === 'reflection'
             ? SHAPE_OPTIONS.filter((o) => o.value === 'reflection-source')
-            : SHAPE_OPTIONS,
+            : rule === 'paper-folding'
+              ? SHAPE_OPTIONS.filter((o) => o.value === 'paper-fold-source')
+              : SHAPE_OPTIONS,
     [rule],
   )
   const visibleRules = useMemo(() => {
@@ -137,6 +147,9 @@ export function Generate() {
     }
     if (shape === 'reflection-source') {
       return RULE_OPTIONS.filter((o) => o.value === 'reflection')
+    }
+    if (shape === 'paper-fold-source') {
+      return RULE_OPTIONS.filter((o) => o.value === 'paper-folding')
     }
     // Real shapes: filter by the SUPPORTED matrix (bulk.ts) so each shape
     // only shows rules its generator actually handles. Block-letter, for
@@ -530,6 +543,8 @@ function ResultPanel({
             <CubePuzzleGrid puzzle={puzzle} stackPx={200} />
           ) : puzzle.type === 'reflection' ? (
             <ReflectionGrid puzzle={puzzle} px={140} />
+          ) : puzzle.type === 'paper-folding' ? (
+            <PaperFoldingGrid puzzle={puzzle} paperPx={90} />
           ) : puzzle.type === 'odd-one-out' ? (
             <div className="text-sm text-[var(--color-text-muted)] italic px-4 py-8">
               Odd-One-Out: tüm seçenekler sağda gösteriliyor
@@ -613,7 +628,25 @@ function ResultPanel({
                             <Shape config={opt} px={70} />
                           </div>
                         ))
-                      : null}
+                      : puzzle.type === 'paper-folding'
+                        ? puzzle.options.map((opt, i) => (
+                            <div
+                              key={i}
+                              className={`w-24 h-24 rounded-lg flex items-center justify-center ${
+                                i === puzzle.correctIndex
+                                  ? 'bg-[var(--color-surface-2)] ring-2 ring-[var(--color-success)]'
+                                  : 'bg-[var(--color-surface-2)]'
+                              }`}
+                            >
+                              <PaperDiagram
+                                rows={puzzle.rows}
+                                cols={puzzle.cols}
+                                holes={opt.holes}
+                                px={84}
+                              />
+                            </div>
+                          ))
+                        : null}
             </div>
             <pre className="mt-4 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-2)] p-3 rounded max-w-md overflow-auto">
 {`id:    ${puzzle.id}

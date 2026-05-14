@@ -12,6 +12,7 @@
 import type {
   CubeProjectionPuzzle,
   Matrix3x3Puzzle,
+  PaperFoldingPuzzle,
   PatternCompletionPuzzle,
   PuzzleItem,
   ReflectionPuzzle,
@@ -45,6 +46,10 @@ import {
   buildReflectionPuzzle,
   isReflectionPuzzleValid,
 } from './reflection'
+import {
+  buildPaperFoldingPuzzle,
+  isPaperFoldingPuzzleValid,
+} from './paperFolding'
 import { mulberry32, randomSeed } from './rng'
 
 export interface BulkSpec {
@@ -138,6 +143,9 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   // Reflection: virtual 'reflection-source' shape. Generator picks the real
   // asymmetric carrier internally (arrow / hammer / block-letter).
   ['reflection-source', 'reflection'],
+  // Paper folding: virtual 'paper-fold-source' shape. Generator builds its
+  // own paper-grid + fold-sequence + hole data, shape ignored.
+  ['paper-fold-source', 'paper-folding'],
 ]
 
 export function isSupported(shape: ShapeKind, rule: RuleKind): boolean {
@@ -192,6 +200,8 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
         return buildCubeProjectionPuzzle(rng)
       case 'reflection':
         return buildReflectionPuzzle(rng, spec.shape)
+      case 'paper-folding':
+        return buildPaperFoldingPuzzle(rng)
       default:
         throw new Error(`Unsupported rule for bulk: ${spec.rule}`)
     }
@@ -270,6 +280,11 @@ function isPuzzleValid(p: PuzzleItem): boolean {
   // Reflection has its own validator (4 distinct options, correct mirror axis)
   if (p.type === 'reflection') {
     return isReflectionPuzzleValid(p as ReflectionPuzzle)
+  }
+
+  // Paper folding has its own validator (4 distinct hole patterns, correct unfold)
+  if (p.type === 'paper-folding') {
+    return isPaperFoldingPuzzleValid(p as PaperFoldingPuzzle)
   }
 
   // Odd-one-out: exactly ONE option must differ from the rest visually.

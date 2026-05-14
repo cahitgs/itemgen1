@@ -13,11 +13,11 @@ interface Props {
 }
 
 /** Shape display label for the dropdown (Turkish + technical name).
- *  Note: `cube-stack` and `reflection-source` are intentionally omitted —
- *  they are virtual ShapeKinds used only by Cube Projection and Reflection
- *  puzzle types respectively (which build their own data, not per-cell
- *  ShapeConfig). */
-const SHAPE_LABELS: Record<Exclude<ShapeKind, 'cube-stack' | 'reflection-source'>, string> = {
+ *  Note: `cube-stack`, `reflection-source`, and `paper-fold-source` are
+ *  intentionally omitted — they are virtual ShapeKinds used only by Cube
+ *  Projection / Reflection / Paper Folding puzzle types respectively
+ *  (which build their own data, not per-cell ShapeConfig). */
+const SHAPE_LABELS: Record<Exclude<ShapeKind, 'cube-stack' | 'reflection-source' | 'paper-fold-source'>, string> = {
   annulus: 'Halkalar (Annulus)',
   dice: 'Zar (Dice)',
   polygon: 'Çokgen (Polygon)',
@@ -52,7 +52,7 @@ interface ParamDef {
   primary?: boolean
 }
 
-const SHAPE_PARAMS: Record<Exclude<ShapeKind, 'cube-stack' | 'reflection-source'>, ParamDef[]> = {
+const SHAPE_PARAMS: Record<Exclude<ShapeKind, 'cube-stack' | 'reflection-source' | 'paper-fold-source'>, ParamDef[]> = {
   annulus: [
     { name: 'ringCount', label: 'Halka Sayısı', min: 1, max: 4, step: 1, defaultValue: 2, primary: true },
     { name: 'gap', label: 'Halka Aralığı', min: 0.05, max: 0.3, step: 0.01, defaultValue: 0.15 },

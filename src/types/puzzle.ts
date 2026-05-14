@@ -31,6 +31,7 @@ export type ShapeKind =
   | 'cube-stack'   // 3D isometric block stack (used by cube-projection puzzle)
   | 'block-letter' // 3×3 grid of asymmetric F/L/T/P/J/S/Z-like glyphs
   | 'reflection-source' // virtual carrier for reflection puzzles (generator picks internally)
+  | 'paper-fold-source' // virtual carrier for paper-folding puzzles
 
 /** Per-cell shape parameters. */
 export interface ShapeConfig {
@@ -69,6 +70,7 @@ export type RuleKind =
   | 'and' | 'or' | 'xor' | 'xnor'  // logic gates on binary cells
   | 'cube-projection' // 3D block stack → "which 2D silhouette appears from axis X?"
   | 'reflection'      // single-shape mirror puzzle — "which is the true reflection over axis X?"
+  | 'paper-folding'   // classic mental rotation: fold paper, punch hole, unfold — where do holes land?
 
 // ──────────────────────────────────────────────────────────────
 // Puzzle items (discriminated by `type`)
@@ -181,6 +183,32 @@ export interface ReflectionPuzzle extends PuzzleBase {
   correctIndex: number
 }
 
+/**
+ * Paper Folding puzzle (classic mental rotation).
+ *
+ *   - Paper is folded 1-2 times (each fold halves it along an axis).
+ *   - A single hole is punched in the FOLDED paper.
+ *   - Question: when the paper is unfolded, where do the holes land?
+ *     The number of resulting holes = 2^foldCount (1 fold → 2 holes,
+ *     2 folds → 4 holes).
+ *   - 4 options, each with a hole pattern on the full-size paper grid.
+ */
+export type FoldDirection = 'right' | 'left' | 'up' | 'down'
+
+export interface PaperFoldingPuzzle extends PuzzleBase {
+  type: 'paper-folding'
+  /** Initial paper dimensions (cells). MVP uses 4×4. */
+  rows: number
+  cols: number
+  /** Sequence of folds applied (left-to-right). Length 1-2 in MVP. */
+  folds: FoldDirection[]
+  /** Hole position on the FOLDED paper (single hole, MVP). */
+  hole: { row: number; col: number }
+  /** Each option = full-paper hole positions after unfolding. */
+  options: Array<{ holes: Array<{ row: number; col: number }> }>
+  correctIndex: number
+}
+
 export type PuzzleItem =
   | Matrix3x3Puzzle
   | Matrix2x2Puzzle
@@ -189,6 +217,7 @@ export type PuzzleItem =
   | PatternCompletionPuzzle
   | CubeProjectionPuzzle
   | ReflectionPuzzle
+  | PaperFoldingPuzzle
 
 // ──────────────────────────────────────────────────────────────
 // Test sessions & results

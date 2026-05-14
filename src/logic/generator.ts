@@ -1169,6 +1169,8 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   'block-letter': randomBlockLetterVariants,
   // reflection-source is virtual — the reflection generator picks the real shape internally
   'reflection-source': null,
+  // paper-fold-source is virtual — the paper-folding generator builds its own data
+  'paper-fold-source': null,
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -1208,6 +1210,8 @@ export const PRIMARY_PARAM: Record<
   'block-letter': { name: 'patternIndex', min: 0, max: 7 },
   // Reflection-source is virtual — never used in 2D arithmetic.
   'reflection-source': null,
+  // Paper-fold-source is virtual — never used in 2D arithmetic.
+  'paper-fold-source': null,
 }
 
 /**
@@ -1500,6 +1504,10 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
       // Virtual — the reflection generator picks the real shape internally.
       throw new Error('randomBaseShape: reflection-source is virtual')
     }
+    case 'paper-fold-source': {
+      // Virtual — the paper-folding generator builds its own data structure.
+      throw new Error('randomBaseShape: paper-fold-source is virtual')
+    }
   }
 }
 
@@ -1781,6 +1789,8 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
     }
     case 'reflection-source':
       throw new Error('pickPrimaryProgression: reflection-source is virtual')
+    case 'paper-fold-source':
+      throw new Error('pickPrimaryProgression: paper-fold-source is virtual')
   }
 }
 
@@ -1807,6 +1817,7 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   'cube-stack': [],  // virtual shape — never participates in progression
   'block-letter': ['size'], // size matters; strokeWidth too subtle on a 3×3 grid
   'reflection-source': [], // virtual — never participates in progression
+  'paper-fold-source': [], // virtual — never participates in progression
 }
 
 function pickSecondaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {

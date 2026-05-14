@@ -13,6 +13,7 @@ import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
 import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
 import { CubePuzzleGrid } from '../components/cube/CubePuzzleGrid'
 import { ReflectionGrid } from '../components/reflection/ReflectionGrid'
+import { PaperFoldingGrid } from '../components/paperFolding/PaperFoldingGrid'
 
 /**
  * Mixer page: build a new test by sampling N puzzles from one or more
@@ -391,6 +392,8 @@ export function Mixer() {
                   <CubePuzzleGrid puzzle={mixed.puzzles[previewIndex]} stackPx={180} />
                 ) : mixed.puzzles[previewIndex].type === 'reflection' ? (
                   <ReflectionGrid puzzle={mixed.puzzles[previewIndex]} px={130} />
+                ) : mixed.puzzles[previewIndex].type === 'paper-folding' ? (
+                  <PaperFoldingGrid puzzle={mixed.puzzles[previewIndex]} paperPx={80} />
                 ) : null}
                 <pre className="text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-2)] p-3 rounded">
 {`shape: ${mixed.puzzles[previewIndex].shape}
