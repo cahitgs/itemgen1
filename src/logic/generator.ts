@@ -134,6 +134,9 @@ export function rotationSymmetryFold(s: ShapeConfig): number {
   if (s.kind === 'arrow') {
     return 1 // fully directional — no rotational symmetry
   }
+  if (s.kind === 'hammer') {
+    return 1 // fully asymmetric — handle + head, marker is in cell coords
+  }
   return 1
 }
 
@@ -546,6 +549,59 @@ function randomSpikeRingVariants(rng: Rng): ShapeConfig[] {
   }
 }
 
+/** Variants for hammer. Primary axes: rotation (direction) or markerPos. */
+function randomHammerVariants(rng: Rng): ShapeConfig[] {
+  const axis = pick(rng, ['rotation', 'markerPos', 'size', 'stroke'] as const)
+  const stroke = pick(rng, STROKE_PALETTE)
+  const baseSize = pick(rng, SIZE_BUCKETS)
+  const baseSW = randInt(rng, 1, 2)
+  const baseRot = pick(rng, [0, 45, 90, 135, 180, 225, 270, 315])
+  const baseMarker = randInt(rng, 1, 4)
+  const baseDims = {
+    handleLength: 0.6,
+    headWidth: 0.6,
+    headThickness: 0.18,
+    markerSize: 0.1,
+  }
+
+  switch (axis) {
+    case 'rotation': {
+      // 8 cardinal/intercardinal directions → pick 3 distinct
+      const rotations = sample(rng, [0, 45, 90, 135, 180, 225, 270, 315], 3)
+      return rotations.map((r) =>
+        defaultShape('hammer', { ...baseDims, markerPos: baseMarker }, {
+          stroke, size: baseSize, strokeWidth: baseSW, rotation: r,
+        }),
+      )
+    }
+    case 'markerPos': {
+      // 4 corner positions → pick 3 distinct
+      const positions = sample(rng, [1, 2, 3, 4], 3)
+      return positions.map((p) =>
+        defaultShape('hammer', { ...baseDims, markerPos: p }, {
+          stroke, size: baseSize, strokeWidth: baseSW, rotation: baseRot,
+        }),
+      )
+    }
+    case 'size': {
+      const sizes = sample(rng, [0.5, 0.65, 0.8, 0.95], 3).sort((a, b) => a - b)
+      return sizes.map((sz) =>
+        defaultShape('hammer', { ...baseDims, markerPos: baseMarker }, {
+          stroke, size: sz, strokeWidth: baseSW, rotation: baseRot,
+        }),
+      )
+    }
+    case 'stroke': {
+      const strokes = sample(rng, STROKE_PALETTE, 3)
+      return strokes.map((stk) =>
+        defaultShape('hammer', { ...baseDims, markerPos: baseMarker }, {
+          stroke: stk, size: baseSize, strokeWidth: baseSW, rotation: baseRot,
+        }),
+      )
+    }
+  }
+}
+
 const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null> = {
   annulus: randomAnnulusVariants,
   dice: randomDiceVariants,
@@ -554,6 +610,7 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   arrow: randomArrowVariants,
   petals: randomPetalsVariants,
   'spike-ring': randomSpikeRingVariants,
+  hammer: randomHammerVariants,
   'box-lines': null,
 }
 
@@ -576,6 +633,7 @@ const PRIMARY_PARAM: Record<
   petals: { name: 'petalCount', min: 3, max: 12 },
   'spike-ring': { name: 'spikeCount', min: 4, max: 16 },
   arrow: null,         // arrow's primary distinction is rotation, not a count
+  hammer: null,        // hammer's primary distinction is rotation + marker position
   'box-lines': null,
 }
 
@@ -623,6 +681,18 @@ function candidatePerturbations(
   // ── Tier 1: shape-defining param ±1 (most visually impactful per shape)
   const tier1 = paramTweaks(correct, 1)
   out.push(...tier1)
+
+  // ── Tier 1.5: hammer marker position — one of the most visible per-cell tweaks
+  if (correct.kind === 'hammer') {
+    const curPos = Math.round(correct.params.markerPos ?? 0)
+    for (const p of [1, 2, 3, 4]) {
+      if (p === curPos) continue
+      out.push({
+        ...clone(correct),
+        params: { ...correct.params, markerPos: p },
+      })
+    }
+  }
 
   // ── Tier 2: color swap (always very visible)
   if (altStrokes.length > 0) {
@@ -777,6 +847,17 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
       }, {
         stroke, size, strokeWidth,
       })
+    case 'hammer':
+      return defaultShape('hammer', {
+        handleLength: pick(rng, [0.5, 0.6, 0.7]),
+        headWidth: pick(rng, [0.5, 0.6, 0.7]),
+        headThickness: pick(rng, [0.15, 0.18, 0.22]),
+        markerPos: randInt(rng, 1, 4),       // always show a marker (1–4)
+        markerSize: 0.1,
+      }, {
+        stroke, size, strokeWidth,
+        rotation: pick(rng, [0, 45, 90, 135, 180, 225, 270, 315]),
+      })
     case 'box-lines':
       // Not yet implemented — fall back to a polygon placeholder
       return defaultShape('polygon', { sides: 4 }, { stroke, size, strokeWidth })
@@ -911,6 +992,17 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
         values: [start, (start + step) % 360, (start + 2 * step) % 360],
       }
     }
+    case 'hammer': {
+      // Same as arrow: rotation progression. Marker stays fixed across the row
+      // (it's the secondary axis that varies row-by-row).
+      const step = pick(rng, [45, 90])
+      const start = pick(rng, [0, 45, 90, 135])
+      return {
+        kind: 'attr',
+        name: 'rotation',
+        values: [start, (start + step) % 360, (start + 2 * step) % 360],
+      }
+    }
     case 'petals': {
       const start = randInt(rng, 3, 10)
       return {
@@ -944,6 +1036,7 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   polygon:      ['size', 'strokeWidth'], // outline-driven shape — strokeWidth visible
   star:         ['size', 'strokeWidth'],
   arrow:        ['size'],                // strokeWidth on arrow outline is subtle next to head/shaft mass
+  hammer:       ['size'],                // hammer is filled, strokeWidth too subtle
   petals:       ['size', 'strokeWidth'],
   'spike-ring': ['size', 'strokeWidth'],
   'box-lines':  ['size', 'strokeWidth'],

@@ -51,7 +51,7 @@ const COUNT_PARAM_SHAPES: ShapeKind[] = [
 ]
 // Shapes available for visual-only rules
 const ALL_SHAPES: ShapeKind[] = [
-  'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring',
+  'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring', 'hammer',
 ]
 
 const SUPPORTED: Array<[ShapeKind, RuleKind]> = [

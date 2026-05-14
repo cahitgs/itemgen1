@@ -20,6 +20,7 @@ const SHAPE_OPTIONS: Array<{ value: ShapeKind; label: string }> = [
   { value: 'arrow', label: 'Arrow (Ok)' },
   { value: 'petals', label: 'Petals (Çiçek)' },
   { value: 'spike-ring', label: 'Spike Ring (Dikenli Halka)' },
+  { value: 'hammer', label: 'Hammer (Çekiç + Marker)' },
 ]
 
 const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [

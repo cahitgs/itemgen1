@@ -21,6 +21,7 @@ export type ShapeKind =
   | 'arrow'        // directional arrow (rotation = direction)
   | 'petals'       // flower with n petals
   | 'spike-ring'   // ring with n outward spikes
+  | 'hammer'       // asymmetric T/hammer with optional corner marker
   | 'box-lines'    // box with internal lines (legacy Corvus)
 
 /** Per-cell shape parameters. */

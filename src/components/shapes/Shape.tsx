@@ -6,6 +6,7 @@ import { Star } from './Star'
 import { Arrow } from './Arrow'
 import { Petals } from './Petals'
 import { SpikeRing } from './SpikeRing'
+import { Hammer } from './Hammer'
 
 interface Props {
   config: ShapeConfig
@@ -52,6 +53,8 @@ function renderShape(config: ShapeConfig, box: number) {
       return <Petals config={config} box={box} />
     case 'spike-ring':
       return <SpikeRing config={config} box={box} />
+    case 'hammer':
+      return <Hammer config={config} box={box} />
     default:
       return (
         <text
