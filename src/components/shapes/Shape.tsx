@@ -10,6 +10,7 @@ import { Hammer } from './Hammer'
 import { Bars } from './Bars'
 import { GridDots } from './GridDots'
 import { Checkerboard } from './Checkerboard'
+import { BoxLines } from './BoxLines'
 
 interface Props {
   config: ShapeConfig
@@ -64,6 +65,8 @@ function renderShape(config: ShapeConfig, box: number) {
       return <GridDots config={config} box={box} />
     case 'checkerboard':
       return <Checkerboard config={config} box={box} />
+    case 'box-lines':
+      return <BoxLines config={config} box={box} />
     default:
       return (
         <text

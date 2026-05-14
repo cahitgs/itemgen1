@@ -193,6 +193,10 @@ export function rotationSymmetryFold(s: ShapeConfig): number {
     // as fold=1 so visualSignature distinguishes all rotations.
     return 1
   }
+  if (s.kind === 'box-lines') {
+    // Pattern (lineMask) symmetry depends on bits — conservative fold=1.
+    return 1
+  }
   return 1
 }
 
@@ -852,6 +856,61 @@ function randomCheckerboardVariants(rng: Rng): ShapeConfig[] {
   }
 }
 
+/** Variants for box-lines. Primary axis: lineMask (pattern of internal lines). */
+function randomBoxLinesVariants(rng: Rng): ShapeConfig[] {
+  const axis = pick(rng, ['lineMask', 'size', 'stroke', 'strokeWidth'] as const)
+  const stroke = pick(rng, STROKE_PALETTE)
+  const baseSize = pick(rng, SIZE_BUCKETS)
+  const baseSW = randInt(rng, 2, 3)
+  const baseMask = randInt(rng, 1, 31)
+
+  switch (axis) {
+    case 'lineMask': {
+      // 3 distinct line patterns
+      const seen = new Set<number>()
+      const masks: number[] = []
+      let attempts = 0
+      while (masks.length < 3 && attempts < 60) {
+        attempts++
+        const m = randInt(rng, 1, 47)
+        if (seen.has(m)) continue
+        seen.add(m)
+        masks.push(m)
+      }
+      while (masks.length < 3) masks.push(randInt(rng, 1, 47))
+      return masks.map((m) =>
+        defaultShape('box-lines', { lineMask: m }, {
+          stroke, size: baseSize, strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'size': {
+      const sizes = sample(rng, [0.5, 0.65, 0.8, 0.95], 3).sort((a, b) => a - b)
+      return sizes.map((sz) =>
+        defaultShape('box-lines', { lineMask: baseMask }, {
+          stroke, size: sz, strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'stroke': {
+      const strokes = sample(rng, STROKE_PALETTE, 3)
+      return strokes.map((stk) =>
+        defaultShape('box-lines', { lineMask: baseMask }, {
+          stroke: stk, size: baseSize, strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'strokeWidth': {
+      const widths = sample(rng, [1, 2, 4, 6], 3).sort((a, b) => a - b)
+      return widths.map((sw) =>
+        defaultShape('box-lines', { lineMask: baseMask }, {
+          stroke, size: baseSize, strokeWidth: sw,
+        }),
+      )
+    }
+  }
+}
+
 const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null> = {
   annulus: randomAnnulusVariants,
   dice: randomDiceVariants,
@@ -864,7 +923,7 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   bars: randomBarsVariants,
   'grid-dots': randomGridDotsVariants,
   checkerboard: randomCheckerboardVariants,
-  'box-lines': null,
+  'box-lines': randomBoxLinesVariants,
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -892,6 +951,7 @@ const PRIMARY_PARAM: Record<
   // Checkerboard varies pattern (bit-mask), not a count — no single-axis
   // arithmetic. Stays out of COUNT_PARAM_SHAPES in bulk.ts.
   checkerboard: null,
+  // Box-lines uses lineMask bit-pattern — also non-arithmetic.
   'box-lines': null,
 }
 
@@ -1141,9 +1201,14 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
         stroke, size, strokeWidth,
       })
     }
-    case 'box-lines':
-      // Not yet implemented — fall back to a polygon placeholder
-      return defaultShape('polygon', { sides: 4 }, { stroke, size, strokeWidth })
+    case 'box-lines': {
+      // Pick a non-trivial line pattern: 1-3 internal lines for clarity
+      // Avoid lineMask=0 (just empty box) and lineMask=63 (cluttered)
+      const lineMask = randInt(rng, 1, 31)
+      return defaultShape('box-lines', { lineMask }, {
+        stroke, size, strokeWidth,
+      })
+    }
   }
 }
 
@@ -1404,6 +1469,7 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
       return { kind: 'param', name: 'rows', values: [start, start + 1, start + 2] }
     }
     case 'box-lines':
+      // size progression — box gets larger; lineMask stays fixed
       return { kind: 'attr', name: 'size', values: [0.5, 0.7, 0.9] }
   }
 }
@@ -1423,9 +1489,9 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   bars:         ['size', 'strokeWidth'], // line-based — strokeWidth very visible
   'grid-dots':  ['size'],                // dots are filled, strokeWidth doesn't apply
   checkerboard: ['size'],                // grid lines exist but pattern variation dominates
+  'box-lines':  ['size', 'strokeWidth'], // line-based — strokeWidth visible
   petals:       ['size', 'strokeWidth'],
   'spike-ring': ['size', 'strokeWidth'],
-  'box-lines':  ['size', 'strokeWidth'],
 }
 
 function pickSecondaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
