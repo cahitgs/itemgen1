@@ -18,6 +18,7 @@ import type {
 } from '../types/puzzle'
 import {
   generateRandomArithmetic3x3,
+  generateRandomBoolOp3x3,
   generateRandomDistOf2,
   generateRandomDistOf3,
   generateRandomIdentity,
@@ -86,6 +87,9 @@ const MIRROR_SHAPES: ShapeKind[] = [
   'bars', 'box-lines',
 ]
 
+// Boolean logic compatible shapes — bit-mask carriers
+const BOOL_OP_SHAPES: ShapeKind[] = ['sector-pie']
+
 const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...ALL_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
     [s, 'identity'],
@@ -101,6 +105,10 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...MIRROR_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'mirror']),
   // multiplication uses same COUNT_PARAM_SHAPES filter as addition/subtraction
   ...COUNT_PARAM_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'multiplication']),
+  // boolean logic — only on bit-mask shapes
+  ...BOOL_OP_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
+    [s, 'and'], [s, 'or'], [s, 'xor'], [s, 'xnor'],
+  ]),
   // Pattern-completion: shape parameter is ignored (the generator picks motifs
   // internally), so we register against every shape so the UI accepts any
   // dropdown combo with this rule.
@@ -146,6 +154,11 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
         return generateRandomArithmetic3x3(spec.shape, 'multiplication', rng)
       case 'mirror':
         return generateRandomMirror3x3(spec.shape, rng)
+      case 'and':
+      case 'or':
+      case 'xor':
+      case 'xnor':
+        return generateRandomBoolOp3x3(spec.shape, spec.rule, rng)
       case 'pattern-completion':
         return generateRandomPatternCompletion(rng)
       default:

@@ -52,6 +52,10 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'subtraction', label: 'Subtraction — col0 − col1 = col2' },
   { value: 'multiplication', label: 'Multiplication — col0 × col1 = col2' },
   { value: 'mirror', label: 'Mirror — satır 2 = satır 0\'ın aynası (asimetrik şekiller)' },
+  { value: 'and', label: 'AND — col0 ∧ col1 = col2 (Sector Pie)' },
+  { value: 'or', label: 'OR — col0 ∨ col1 = col2 (Sector Pie)' },
+  { value: 'xor', label: 'XOR — col0 ⊻ col1 = col2 (Sector Pie)' },
+  { value: 'xnor', label: 'XNOR — ¬(col0 ⊻ col1) = col2 (Sector Pie)' },
   { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir?' },
 ]
 

@@ -1801,6 +1801,134 @@ export function generateRandomRotation3x3(
 }
 
 // ──────────────────────────────────────────────────────────────
+// Rule: Boolean Logic (AND / OR / XOR / XNOR)
+//
+//   Per row: bit-pattern(col2) = bit-pattern(col0) [op] bit-pattern(col1)
+//   where [op] is &, |, ^, or ~^ applied bit-by-bit on the shape's fillMask
+//   (sector-pie) or pattern (checkerboard) param.
+//
+//   Each row uses different operand patterns A, B → C = A op B.
+//   The 3 rows establish the rule; missing cell [2][2] = c2.
+//
+//   Distractors: A only, B only, A [wrong-op] B, off-by-one bit perturbation.
+// ──────────────────────────────────────────────────────────────
+
+type BoolOp = 'and' | 'or' | 'xor' | 'xnor'
+
+function applyBoolOp(op: BoolOp, a: number, b: number, mask: number): number {
+  switch (op) {
+    case 'and':  return (a & b) & mask
+    case 'or':   return (a | b) & mask
+    case 'xor':  return (a ^ b) & mask
+    case 'xnor': return (~(a ^ b)) & mask
+  }
+}
+
+/** Shapes that carry a bit-mask param suitable for boolean logic rules. */
+type BoolParamMap = {
+  paramName: string  // which param stores the bit-mask
+  countParam?: string // param that determines bit count (e.g., sectorCount)
+  defaultCount: number
+}
+
+const BOOL_LOGIC_SHAPES: Partial<Record<ShapeKind, BoolParamMap>> = {
+  'sector-pie': { paramName: 'fillMask', countParam: 'sectorCount', defaultCount: 6 },
+  // checkerboard could work but pattern is bigger (rows*cols bits) — keep simple
+}
+
+export function isBoolOpCompatible(shape: ShapeKind): boolean {
+  return Boolean(BOOL_LOGIC_SHAPES[shape])
+}
+
+export function generateRandomBoolOp3x3(
+  shape: ShapeKind,
+  op: BoolOp,
+  rng: Rng = mulberry32(randomSeed()),
+): Matrix3x3Puzzle {
+  const spec = BOOL_LOGIC_SHAPES[shape]
+  if (!spec) throw new Error(`Bool op rule not supported for "${shape}"`)
+
+  const base = randomBaseShape(shape, rng)
+  // Fix the bit-count for the puzzle (so all cells have same sector count)
+  const bitCount = Math.max(3, Math.min(6, Math.round(
+    spec.countParam ? (base.params[spec.countParam] ?? spec.defaultCount) : spec.defaultCount,
+  )))
+  const fullMask = (1 << bitCount) - 1
+
+  // Pick 3 (a, b) pairs such that c = a op b is non-trivial and rows are diverse.
+  const rows: Array<[number, number, number]> = []
+  const seenRowKeys = new Set<string>()
+  let attempts = 0
+  while (rows.length < 3 && attempts < 200) {
+    attempts++
+    const a = randInt(rng, 1, fullMask - 1) // avoid 0 and full
+    const b = randInt(rng, 1, fullMask - 1)
+    const c = applyBoolOp(op, a, b, fullMask)
+    // Reject trivial rows where the result equals an operand (looks ambiguous)
+    if (c === a || c === b) continue
+    // Reject all-zero / all-full results
+    if (c === 0 || c === fullMask) continue
+    const key = `${a},${b}`
+    if (seenRowKeys.has(key)) continue
+    seenRowKeys.add(key)
+    rows.push([a, b, c])
+  }
+  if (rows.length < 3) {
+    throw new Error(`Could not find 3 distinct rows for ${op} on ${shape}`)
+  }
+
+  const makeShape = (mask: number): ShapeConfig => {
+    const cell = clone(base)
+    cell.params[spec.paramName] = mask
+    if (spec.countParam) cell.params[spec.countParam] = bitCount
+    return cell
+  }
+
+  const cells: ShapeConfig[][] = rows.map((row) => row.map(makeShape))
+  const correct = clone(cells[2][2])
+  const [a2, b2, c2] = rows[2]
+
+  // Distractor pool — Raven-style traps
+  const distractorPool: ShapeConfig[] = []
+  // Component A (visible in grid)
+  if (a2 !== c2) distractorPool.push(makeShape(a2))
+  if (b2 !== c2 && b2 !== a2) distractorPool.push(makeShape(b2))
+  // Wrong operation
+  const wrongOps: BoolOp[] = (
+    ['and', 'or', 'xor', 'xnor'] as const
+  ).filter((o) => o !== op)
+  for (const wo of wrongOps) {
+    const w = applyBoolOp(wo, a2, b2, fullMask)
+    if (w !== c2 && w !== 0 && w !== fullMask) {
+      distractorPool.push(makeShape(w))
+    }
+  }
+  // Off-by-one bit flip
+  for (let bit = 0; bit < bitCount; bit++) {
+    const flipped = c2 ^ (1 << bit)
+    if (flipped !== 0 && flipped !== fullMask) {
+      distractorPool.push(makeShape(flipped))
+    }
+  }
+
+  const distractors = makeDistinctDistractors(rng, correct, distractorPool, 3)
+  const { result: options, permutation } = shuffleRng(rng, [correct, ...distractors])
+  const correctIndex = permutation.indexOf(0)
+
+  return {
+    id: nextId(rng),
+    type: '3x3',
+    rule: op,
+    shape,
+    cells,
+    options,
+    correctIndex,
+    optionCount: options.length,
+    difficulty: 4,
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
 // Rule: Mirror (row 1 = mirror of row 0 along an axis)
 //
 //   Two flavors:
