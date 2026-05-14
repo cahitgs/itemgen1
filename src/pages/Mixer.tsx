@@ -148,7 +148,7 @@ export function Mixer() {
 
         <p className="text-sm text-[var(--color-text-muted)] mb-6">
           Kütüphandeki testlerden istediğin kadar soru çekip yeni bir karışık test
-          oluştur. Farklı şekil ve mantıklardan örnekleyerek Raven-tarzı bir
+          oluştur. Farklı şekil ve mantıklardan örnekleyerek kademeli bir
           zorluk eğrisi yapabilirsin.
         </p>
 

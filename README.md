@@ -2,9 +2,9 @@
 
 > *Cogito ergo item* — düşünüyorum, öyleyse bulmaca var.
 
-Tarayıcıda çalışan **non-verbal bilişsel test üreteci ve oynatıcısı**.
-Raven'ın Progressive Matrices'ine benzer 3×3 görsel-mantıksal bulmacalar üretir,
-karıştırır, oynatır.
+Tarayıcıda çalışan **non-verbal bilişsel test platformu**.
+Görsel-mantıksal bulmacaları üret, karıştır, oynat.
+Çoklu şekil, çoklu mantık, binlerce benzersiz soru.
 
 > [Corvus](https://github.com/Thimbleby/Corvus) projesinden ilham alındı,
 > ancak sıfırdan modern bir stack üzerine yeniden yazıldı.

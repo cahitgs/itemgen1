@@ -8,9 +8,9 @@ export function Home() {
           Cogitem
         </h1>
         <p className="text-lg text-[var(--color-text-muted)] mb-12">
-          <em>Cogito ergo item</em> — non-verbal bilişsel test üreteci.
-          Raven Progressive Matrices tarzı 3×3 görsel-mantıksal bulmacalar,
-          binlerce benzersiz soru, tek tıkla.
+          <em>Cogito ergo item</em> — non-verbal bilişsel test platformu.
+          Görsel-mantıksal bulmacaları üret, karıştır, oynat.
+          Binlerce benzersiz soru, tek tıkla.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
