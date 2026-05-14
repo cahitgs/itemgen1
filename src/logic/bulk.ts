@@ -9,7 +9,13 @@
  *   // result.duplicatesSkipped tells you how many collisions happened
  */
 
-import type { Matrix3x3Puzzle, RuleKind, ShapeKind } from '../types/puzzle'
+import type {
+  Matrix3x3Puzzle,
+  PatternCompletionPuzzle,
+  PuzzleItem,
+  RuleKind,
+  ShapeKind,
+} from '../types/puzzle'
 import {
   generateRandomArithmetic3x3,
   generateRandomDistOf3,
@@ -19,6 +25,10 @@ import {
   puzzleSignature,
   visualSignature,
 } from './generator'
+import {
+  generateRandomPatternCompletion,
+  isPatternCompletionValid,
+} from './patternCompletion'
 import { mulberry32, randomSeed } from './rng'
 
 export interface BulkSpec {
@@ -36,7 +46,7 @@ export interface BulkSpec {
 }
 
 export interface BulkResult {
-  puzzles: Matrix3x3Puzzle[]
+  puzzles: PuzzleItem[]
   seed: number
   duplicatesSkipped: number
   /** Puzzles rejected because they had identical-looking options or invisible rule. */
@@ -69,6 +79,10 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
     [s, 'subtraction'],
   ]),
   ...ROTATION_ONLY_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'rotation']),
+  // Pattern-completion: shape parameter is ignored (the generator picks motifs
+  // internally), so we register against every shape so the UI accepts any
+  // dropdown combo with this rule.
+  ...ALL_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'pattern-completion']),
 ]
 
 export function isSupported(shape: ShapeKind, rule: RuleKind): boolean {
@@ -90,7 +104,7 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
   const rng = mulberry32(seed)
   const maxAttempts = spec.maxAttempts ?? spec.count * 4
 
-  const generateOne = (): Matrix3x3Puzzle => {
+  const generateOne = (): PuzzleItem => {
     switch (spec.rule) {
       case 'identity':
         return generateRandomIdentity(spec.shape, rng)
@@ -104,13 +118,15 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
         return generateRandomArithmetic3x3(spec.shape, 'addition', rng)
       case 'subtraction':
         return generateRandomArithmetic3x3(spec.shape, 'subtraction', rng)
+      case 'pattern-completion':
+        return generateRandomPatternCompletion(rng)
       default:
         throw new Error(`Unsupported rule for bulk: ${spec.rule}`)
     }
   }
 
   const seen = new Set<string>()
-  const puzzles: Matrix3x3Puzzle[] = []
+  const puzzles: PuzzleItem[] = []
   let attempts = 0
   let duplicatesSkipped = 0
   let invalidSkipped = 0
@@ -118,7 +134,7 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
 
   while (puzzles.length < spec.count && attempts < maxAttempts) {
     attempts++
-    let p: Matrix3x3Puzzle
+    let p: PuzzleItem
     try {
       p = generateOne()
     } catch {
@@ -160,37 +176,42 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
 }
 
 /**
- * A puzzle is "valid" if a human can actually solve it. Two failure modes:
- *   1. Two answer options look identical (then the puzzle has multiple correct
- *      visual answers, even if the IDs differ).
- *   2. For dist-of-3, the row variants all look the same (rule invisible).
+ * A puzzle is "valid" if a human can actually solve it. Failure modes vary by
+ * puzzle type — see the per-type branches below.
  */
-function isPuzzleValid(p: Matrix3x3Puzzle): boolean {
+function isPuzzleValid(p: PuzzleItem): boolean {
+  // Pattern completion has its own validator (different cell structure)
+  if (p.type === 'pattern-completion') {
+    return isPatternCompletionValid(p as PatternCompletionPuzzle)
+  }
+
+  // For 3x3 puzzles (and 2x2/series when added), check option distinctness +
+  // rule visibility.
+  if (p.type !== '3x3') return true // other types: trust generators for now
+
+  const m3 = p as Matrix3x3Puzzle
+
   // 1. Pairwise-distinct options
-  const optSigs = p.options.map(visualSignature)
+  const optSigs = m3.options.map(visualSignature)
   if (new Set(optSigs).size !== optSigs.length) return false
 
   // 2. For dist-of-3: first row should have 3 distinct cells (rule visible)
-  if (p.rule === 'dist-of-3') {
-    const rowSigs = p.cells[0].map(visualSignature)
+  if (m3.rule === 'dist-of-3') {
+    const rowSigs = m3.cells[0].map(visualSignature)
     if (new Set(rowSigs).size !== 3) return false
   }
 
-  // 3. For progression: BOTH axes must be visible — row 0 shows the column
-  //    progression, column 0 shows the row progression. Each must have 3
-  //    distinct visual signatures or the rule isn't readable.
-  if (p.rule === 'progression') {
-    const row0Sigs = p.cells[0].map(visualSignature)
+  // 3. For progression: BOTH axes must be visible
+  if (m3.rule === 'progression') {
+    const row0Sigs = m3.cells[0].map(visualSignature)
     if (new Set(row0Sigs).size !== 3) return false
-    const col0Sigs = [p.cells[0][0], p.cells[1][0], p.cells[2][0]].map(visualSignature)
+    const col0Sigs = [m3.cells[0][0], m3.cells[1][0], m3.cells[2][0]].map(visualSignature)
     if (new Set(col0Sigs).size !== 3) return false
   }
 
-  // 4. For arithmetic: every row must show 3 visually-distinct cells so the
-  //    operation is readable. (Construction already filters a≠b≠c, but this
-  //    is a defensive net in case color/size collapse signatures.)
-  if (p.rule === 'addition' || p.rule === 'subtraction') {
-    for (const row of p.cells) {
+  // 4. For arithmetic: every row must show 3 visually-distinct cells
+  if (m3.rule === 'addition' || m3.rule === 'subtraction') {
+    for (const row of m3.cells) {
       const rowSigs = row.map(visualSignature)
       if (new Set(rowSigs).size !== 3) return false
     }

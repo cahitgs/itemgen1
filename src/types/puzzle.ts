@@ -54,6 +54,7 @@ export type RuleKind =
   | 'subtraction'     // col0 − col1 = col2 (per row)
   | 'progression'     // two-axis progression (primary along cols, secondary along rows)
   | 'rotation'        // pure rotation only — sliding window (r+c)×Δ. Asymmetric shapes only.
+  | 'pattern-completion' // big repeating pattern with a blank — "what fills the blank?"
   | 'and' | 'or' | 'xor' | 'xnor'  // logic gates on binary cells
 
 // ──────────────────────────────────────────────────────────────
@@ -104,11 +105,29 @@ export interface OddOneOutPuzzle extends PuzzleBase {
   correctIndex: number
 }
 
+/**
+ * Pattern Completion puzzle ("which fragment fills the blank?").
+ *
+ *   - `motifs` is the palette of small shapes the pattern is built from
+ *   - `pattern[r][c]` indexes into motifs[]
+ *   - `blank` is the rectangular hole the player must fill
+ *   - `fragmentOptions[i]` is a rows×cols grid of motif indices
+ */
+export interface PatternCompletionPuzzle extends PuzzleBase {
+  type: 'pattern-completion'
+  motifs: ShapeConfig[]
+  pattern: number[][]
+  blank: { row: number; col: number; rows: number; cols: number }
+  fragmentOptions: number[][][]
+  correctIndex: number
+}
+
 export type PuzzleItem =
   | Matrix3x3Puzzle
   | Matrix2x2Puzzle
   | SeriesPuzzle
   | OddOneOutPuzzle
+  | PatternCompletionPuzzle
 
 // ──────────────────────────────────────────────────────────────
 // Test sessions & results

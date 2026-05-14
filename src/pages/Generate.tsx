@@ -8,6 +8,7 @@ import {
   type BulkSpec,
 } from '../logic/bulk'
 import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
+import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
 import { Shape } from '../components/shapes/Shape'
 import type { ShapeKind, RuleKind } from '../types/puzzle'
 import { saveTest } from '../db/dexie'
@@ -30,6 +31,7 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'rotation', label: 'Rotation — saf dönüş (sadece Arrow/Hammer)' },
   { value: 'addition', label: 'Addition — col0 + col1 = col2' },
   { value: 'subtraction', label: 'Subtraction — col0 − col1 = col2' },
+  { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir? (şekil yok sayılır)' },
 ]
 
 const COUNT_PRESETS = [10, 100, 1000, 5000]
@@ -411,7 +413,11 @@ function ResultPanel({
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 items-start justify-center">
-          <PuzzleGrid puzzle={puzzle} cellPx={90} />
+          {puzzle.type === 'pattern-completion' ? (
+            <PatternCompletionGrid puzzle={puzzle} cellPx={36} />
+          ) : puzzle.type === '3x3' ? (
+            <PuzzleGrid puzzle={puzzle} cellPx={90} />
+          ) : null}
           <div>
             <p className="text-sm text-[var(--color-text-muted)] mb-2">
               Cevap şıkları (doğru:{' '}
@@ -421,18 +427,47 @@ function ResultPanel({
               )
             </p>
             <div className="flex flex-wrap gap-2">
-              {puzzle.options.map((opt, i) => (
-                <div
-                  key={i}
-                  className={`w-20 h-20 rounded-lg flex items-center justify-center ${
-                    i === puzzle.correctIndex
-                      ? 'bg-[var(--color-surface-2)] ring-2 ring-[var(--color-success)]'
-                      : 'bg-[var(--color-surface-2)]'
-                  }`}
-                >
-                  <Shape config={opt} px={70} />
-                </div>
-              ))}
+              {puzzle.type === 'pattern-completion'
+                ? puzzle.fragmentOptions.map((frag, i) => (
+                    <div
+                      key={i}
+                      className={`p-2 rounded-lg flex items-center justify-center ${
+                        i === puzzle.correctIndex
+                          ? 'bg-[var(--color-surface-2)] ring-2 ring-[var(--color-success)]'
+                          : 'bg-[var(--color-surface-2)]'
+                      }`}
+                    >
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${puzzle.blank.cols}, 24px)`,
+                          gridTemplateRows: `repeat(${puzzle.blank.rows}, 24px)`,
+                        }}
+                      >
+                        {frag.flatMap((row, r) =>
+                          row.map((mIdx, c) => (
+                            <div key={`${r}-${c}`} style={{ width: 24, height: 24 }}>
+                              <Shape config={puzzle.motifs[mIdx]} px={24} />
+                            </div>
+                          )),
+                        )}
+                      </div>
+                    </div>
+                  ))
+                : puzzle.type === '3x3'
+                  ? puzzle.options.map((opt, i) => (
+                      <div
+                        key={i}
+                        className={`w-20 h-20 rounded-lg flex items-center justify-center ${
+                          i === puzzle.correctIndex
+                            ? 'bg-[var(--color-surface-2)] ring-2 ring-[var(--color-success)]'
+                            : 'bg-[var(--color-surface-2)]'
+                        }`}
+                      >
+                        <Shape config={opt} px={70} />
+                      </div>
+                    ))
+                  : null}
             </div>
             <pre className="mt-4 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-2)] p-3 rounded max-w-md overflow-auto">
 {`id:    ${puzzle.id}

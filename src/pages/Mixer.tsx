@@ -8,8 +8,9 @@ import {
   type SavedTestMeta,
 } from '../db/dexie'
 import { mulberry32, randomSeed, sample, shuffle } from '../logic/rng'
-import type { Matrix3x3Puzzle } from '../types/puzzle'
+import type { PuzzleItem } from '../types/puzzle'
 import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
+import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
 
 /**
  * Mixer page: build a new test by sampling N puzzles from one or more
@@ -23,7 +24,7 @@ export function Mixer() {
   const [draws, setDraws] = useState<Record<number, number>>({})
   const [seedInput, setSeedInput] = useState<string>('')
   const [mixed, setMixed] = useState<{
-    puzzles: Matrix3x3Puzzle[]
+    puzzles: PuzzleItem[]
     sources: MixerSource[]
     seed: number
   } | null>(null)
@@ -64,7 +65,7 @@ export function Mixer() {
     try {
       const seed = seedInput.trim() === '' ? randomSeed() : Number(seedInput)
       const rng = mulberry32(seed)
-      const collected: Matrix3x3Puzzle[] = []
+      const collected: PuzzleItem[] = []
       const sources: MixerSource[] = []
 
       for (const t of tests) {
@@ -380,7 +381,11 @@ export function Mixer() {
               </div>
 
               <div className="flex flex-col md:flex-row gap-6 items-start justify-center">
-                <PuzzleGrid puzzle={mixed.puzzles[previewIndex]} cellPx={80} />
+                {mixed.puzzles[previewIndex].type === 'pattern-completion' ? (
+                  <PatternCompletionGrid puzzle={mixed.puzzles[previewIndex]} cellPx={32} />
+                ) : mixed.puzzles[previewIndex].type === '3x3' ? (
+                  <PuzzleGrid puzzle={mixed.puzzles[previewIndex]} cellPx={80} />
+                ) : null}
                 <pre className="text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-2)] p-3 rounded">
 {`shape: ${mixed.puzzles[previewIndex].shape}
 rule:  ${mixed.puzzles[previewIndex].rule}

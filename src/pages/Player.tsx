@@ -2,18 +2,20 @@ import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
 import { OptionPanel } from '../components/puzzle/OptionPanel'
+import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
+import { FragmentOptionPanel } from '../components/puzzle/FragmentOptionPanel'
 import {
   sampleAnnulusIdentity,
   sampleAnnulusDistOf3,
   sampleDiceDistOf3,
 } from '../logic/generator'
-import type { Matrix3x3Puzzle, AnswerLog } from '../types/puzzle'
+import type { PuzzleItem, AnswerLog } from '../types/puzzle'
 import { exportAnswersToCsv } from '../utils/csv'
 
 type Status = 'playing' | 'feedback' | 'done'
 
 interface PlayerNavState {
-  puzzles?: Matrix3x3Puzzle[]
+  puzzles?: PuzzleItem[]
   testName?: string
 }
 
@@ -21,6 +23,11 @@ interface PlayerNavState {
  * Test runner. Default: 3 sample puzzles (warm-up).
  * If navigated with router state `{ puzzles, testName }` (e.g. from /library),
  * plays that test instead.
+ *
+ * Renders different layouts based on puzzle.type:
+ *  - '3x3' → PuzzleGrid + OptionPanel (standard matrix puzzle)
+ *  - 'pattern-completion' → PatternCompletionGrid + FragmentOptionPanel
+ *  - others (2x2, series, odd-one-out) fall back to 3×3 layout for now
  */
 export function Player() {
   const location = useLocation()
@@ -28,7 +35,7 @@ export function Player() {
 
   // Build the puzzle list once per mount. If a test was passed in via router
   // state, use it; otherwise fall back to the warm-up samples.
-  const puzzles = useMemo<Matrix3x3Puzzle[]>(() => {
+  const puzzles = useMemo<PuzzleItem[]>(() => {
     if (nav.puzzles && nav.puzzles.length > 0) return nav.puzzles
     return [sampleAnnulusIdentity(), sampleAnnulusDistOf3(), sampleDiceDistOf3()]
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -172,24 +179,50 @@ export function Player() {
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
-          <PuzzleGrid puzzle={current} />
+          {current.type === 'pattern-completion' ? (
+            <PatternCompletionGrid puzzle={current} />
+          ) : current.type === '3x3' ? (
+            <PuzzleGrid puzzle={current} />
+          ) : (
+            <div className="text-[var(--color-text-muted)]">
+              Bu puzzle tipi henüz desteklenmiyor: {current.type}
+            </div>
+          )}
           <div className="flex flex-col gap-4 items-center">
             <p className="text-sm text-[var(--color-text-muted)]">
-              Sağdaki seçeneklerden eksik hücreye uyanı seç:
+              {current.type === 'pattern-completion'
+                ? 'Boş alanı dolduran fragment hangisi?'
+                : 'Sağdaki seçeneklerden eksik hücreye uyanı seç:'}
             </p>
-            <OptionPanel
-              puzzle={current}
-              onPick={handlePick}
-              onHover={handleHover}
-              highlightIndex={picked}
-              highlightKind={
-                picked !== null
-                  ? picked === current.correctIndex
-                    ? 'correct'
-                    : 'wrong'
-                  : undefined
-              }
-            />
+            {current.type === 'pattern-completion' ? (
+              <FragmentOptionPanel
+                puzzle={current}
+                onPick={handlePick}
+                onHover={handleHover}
+                highlightIndex={picked}
+                highlightKind={
+                  picked !== null
+                    ? picked === current.correctIndex
+                      ? 'correct'
+                      : 'wrong'
+                    : undefined
+                }
+              />
+            ) : current.type === '3x3' ? (
+              <OptionPanel
+                puzzle={current}
+                onPick={handlePick}
+                onHover={handleHover}
+                highlightIndex={picked}
+                highlightKind={
+                  picked !== null
+                    ? picked === current.correctIndex
+                      ? 'correct'
+                      : 'wrong'
+                    : undefined
+                }
+              />
+            ) : null}
             {status === 'feedback' && (
               <button
                 type="button"

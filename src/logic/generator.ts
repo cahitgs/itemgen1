@@ -12,6 +12,7 @@
 
 import type {
   Matrix3x3Puzzle,
+  PuzzleItem,
   ShapeConfig,
   ShapeKind,
 } from '../types/puzzle'
@@ -71,14 +72,30 @@ export function clone(s: ShapeConfig): ShapeConfig {
 /**
  * Build a stable structural signature of a puzzle (for dedup).
  * Two puzzles with the same signature look identical to the player.
+ *
+ * Handles both the standard 3×3 grid puzzles and pattern-completion puzzles,
+ * which have a different cell structure.
  */
-export function puzzleSignature(p: Matrix3x3Puzzle): string {
-  const cellSig = p.cells
-    .map((row) => row.map(visualSignature).join('|'))
-    .join('/')
-  // We don't include options order — only the correct answer's identity
-  const correctSig = visualSignature(p.options[p.correctIndex])
-  return `${p.shape}:${p.rule}:${cellSig}#${correctSig}`
+export function puzzleSignature(p: PuzzleItem): string {
+  if (p.type === 'pattern-completion') {
+    // Pattern signature: motif kinds + pattern grid + blank position + correct fragment
+    const motifSig = p.motifs.map(visualSignature).join(';')
+    const patSig = p.pattern.map((row) => row.join(',')).join('|')
+    const blankSig = `${p.blank.row},${p.blank.col},${p.blank.rows},${p.blank.cols}`
+    const correctFrag = p.fragmentOptions[p.correctIndex]
+      .map((row) => row.join(','))
+      .join('|')
+    return `pcom:${motifSig}#${patSig}@${blankSig}=>${correctFrag}`
+  }
+  if (p.type === '3x3') {
+    const cellSig = p.cells
+      .map((row) => row.map(visualSignature).join('|'))
+      .join('/')
+    const correctSig = visualSignature(p.options[p.correctIndex])
+    return `${p.shape}:${p.rule}:${cellSig}#${correctSig}`
+  }
+  // Fallback for other puzzle types we haven't implemented yet
+  return `${p.type}:${p.shape}:${p.rule}:${p.id}`
 }
 
 /**

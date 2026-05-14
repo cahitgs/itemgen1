@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Matrix3x3Puzzle, RuleKind, ShapeKind } from '../types/puzzle'
+import type { PuzzleItem, RuleKind, ShapeKind } from '../types/puzzle'
 
 /**
  * Schema for saved tests in IndexedDB.
@@ -26,7 +26,7 @@ export interface SavedTest {
   count: number
   seed: number
   /** The puzzles themselves — denormalized into one row for simplicity. */
-  puzzles: Matrix3x3Puzzle[]
+  puzzles: PuzzleItem[]
   createdAt: number
   /** Provenance for mixed tests: which source tests + how many drawn from each. */
   sources?: MixerSource[]
