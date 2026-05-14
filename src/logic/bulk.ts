@@ -21,6 +21,7 @@ import {
   generateRandomDistOf2,
   generateRandomDistOf3,
   generateRandomIdentity,
+  generateRandomMirror3x3,
   generateRandomProgression3x3,
   generateRandomRotation3x3,
   isBlankCell,
@@ -77,6 +78,12 @@ const DIST_OF_2_SHAPES: ShapeKind[] = [
   'petals', 'spike-ring', 'hammer', 'bars',
 ]
 
+// Mirror compatible shapes — only those with visible rotation flip
+const MIRROR_SHAPES: ShapeKind[] = [
+  'arrow', 'hammer', 'polygon', 'star', 'petals', 'spike-ring',
+  'bars', 'box-lines',
+]
+
 const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...ALL_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
     [s, 'identity'],
@@ -89,6 +96,9 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ]),
   ...ROTATION_ONLY_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'rotation']),
   ...DIST_OF_2_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'dist-of-2']),
+  ...MIRROR_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'mirror']),
+  // multiplication uses same COUNT_PARAM_SHAPES filter as addition/subtraction
+  ...COUNT_PARAM_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'multiplication']),
   // Pattern-completion: shape parameter is ignored (the generator picks motifs
   // internally), so we register against every shape so the UI accepts any
   // dropdown combo with this rule.
@@ -130,6 +140,10 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
         return generateRandomArithmetic3x3(spec.shape, 'addition', rng)
       case 'subtraction':
         return generateRandomArithmetic3x3(spec.shape, 'subtraction', rng)
+      case 'multiplication':
+        return generateRandomArithmetic3x3(spec.shape, 'multiplication', rng)
+      case 'mirror':
+        return generateRandomMirror3x3(spec.shape, rng)
       case 'pattern-completion':
         return generateRandomPatternCompletion(rng)
       default:
@@ -235,7 +249,7 @@ function isPuzzleValid(p: PuzzleItem): boolean {
   }
 
   // 4. For arithmetic: every row must show 3 visually-distinct cells
-  if (m3.rule === 'addition' || m3.rule === 'subtraction') {
+  if (m3.rule === 'addition' || m3.rule === 'subtraction' || m3.rule === 'multiplication') {
     for (const row of m3.cells) {
       const rowSigs = row.map(visualSignature)
       if (new Set(rowSigs).size !== 3) return false

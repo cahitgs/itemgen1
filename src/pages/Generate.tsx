@@ -48,6 +48,8 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'rotation', label: 'Rotation — saf dönüş (sadece Arrow/Hammer)' },
   { value: 'addition', label: 'Addition — col0 + col1 = col2' },
   { value: 'subtraction', label: 'Subtraction — col0 − col1 = col2' },
+  { value: 'multiplication', label: 'Multiplication — col0 × col1 = col2' },
+  { value: 'mirror', label: 'Mirror — satır 2 = satır 0\'ın aynası (asimetrik şekiller)' },
   { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir?' },
 ]
 

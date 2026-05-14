@@ -1645,7 +1645,99 @@ export function generateRandomRotation3x3(
 }
 
 // ──────────────────────────────────────────────────────────────
-// Rule: Arithmetic (Addition / Subtraction)
+// Rule: Mirror (row 1 = mirror of row 0 along an axis)
+//
+//   Two flavors:
+//     - horizontal mirror: cells[0][c] = mirrorH(cells[1][c]), row 2 = row 0
+//     - vertical mirror:   cells[r][0] = mirrorV(cells[r][2]), col 1 unchanged
+//
+//   "mirror" here means rotation by 180° for asymmetric shapes (effective
+//   visual flip). Only meaningful for fold < 4 shapes.
+// ──────────────────────────────────────────────────────────────
+
+/** Shapes for which mirror reads as a clear visual flip. */
+const MIRROR_COMPATIBLE: ShapeKind[] = [
+  'arrow', 'hammer', 'polygon', 'star', 'petals', 'spike-ring',
+  'bars', 'box-lines',
+]
+
+export function isMirrorCompatible(shape: ShapeKind): boolean {
+  return MIRROR_COMPATIBLE.includes(shape)
+}
+
+export function generateRandomMirror3x3(
+  shape: ShapeKind,
+  rng: Rng = mulberry32(randomSeed()),
+): Matrix3x3Puzzle {
+  if (!isMirrorCompatible(shape)) {
+    throw new Error(`mirror rule not supported for shape "${shape}"`)
+  }
+
+  const base = randomBaseShape(shape, rng)
+  // Decide axis: horizontal (row pairs mirrored) or vertical (col pairs mirrored)
+  const axis = pick(rng, ['horizontal', 'vertical'] as const)
+  // Pick three distinct rotation values that look mirror-distinct
+  // For asymmetric shapes, rotating by 180° gives a clear flip
+  const rotations = sample(rng, [0, 45, 90, 135, 180, 225, 270, 315], 3)
+
+  // Build 3×3 with mirror pattern.
+  // We pick 3 "base" shapes (different rotations) for the column triplet,
+  // then mirror down or across.
+  const baseRow: ShapeConfig[] = rotations.map((r) => ({
+    ...clone(base),
+    rotation: r,
+  }))
+
+  const cells: ShapeConfig[][] = [[], [], []]
+  if (axis === 'horizontal') {
+    // Row 0 has 3 rotations, Row 2 is its mirror (each cell rotated +180),
+    // Row 1 is identical to Row 0 (so the pattern is visible).
+    cells[0] = baseRow.map((s) => clone(s))
+    cells[1] = baseRow.map((s) => clone(s))
+    cells[2] = baseRow.map((s) => ({ ...clone(s), rotation: (s.rotation + 180) % 360 }))
+  } else {
+    // Vertical: col 0 has 3 rotations down, col 2 is mirror.
+    // Actually for vertical mirror, we mirror across a horizontal axis between cols.
+    // Simpler: cells[r][0] and cells[r][2] are mirrors, col 1 is unchanged.
+    for (let r = 0; r < 3; r++) {
+      cells[r] = [
+        clone(baseRow[r]),
+        clone(baseRow[r]), // center
+        { ...clone(baseRow[r]), rotation: (baseRow[r].rotation + 180) % 360 },
+      ]
+    }
+  }
+
+  const correct = clone(cells[2][2])
+
+  // Distractors: the un-mirrored version (cells[r][0] equivalent),
+  // an off-by-90° rotation, perturbations
+  const correctRot = correct.rotation
+  const distractorPool: ShapeConfig[] = [
+    { ...clone(correct), rotation: (correctRot + 180) % 360 }, // un-mirrored
+    { ...clone(correct), rotation: (correctRot + 90) % 360 },  // wrong axis
+    { ...clone(correct), rotation: (correctRot + 45) % 360 },
+  ]
+
+  const distractors = makeDistinctDistractors(rng, correct, distractorPool, 3)
+  const { result: options, permutation } = shuffleRng(rng, [correct, ...distractors])
+  const correctIndex = permutation.indexOf(0)
+
+  return {
+    id: nextId(rng),
+    type: '3x3',
+    rule: 'mirror',
+    shape,
+    cells,
+    options,
+    correctIndex,
+    optionCount: options.length,
+    difficulty: 3,
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Rule: Arithmetic (Addition / Subtraction / Multiplication)
 //
 //   Per row:  primary(col2) = primary(col0)  ⊕  primary(col1)
 //   where ⊕ is + or -. Each row uses a different (a, b) pair to make the
@@ -1657,10 +1749,12 @@ export function generateRandomRotation3x3(
 //     • off-by-one perturbations of the correct value
 // ──────────────────────────────────────────────────────────────
 
-type ArithOp = 'addition' | 'subtraction'
+type ArithOp = 'addition' | 'subtraction' | 'multiplication'
 
 function applyOp(op: ArithOp, a: number, b: number): number {
-  return op === 'addition' ? a + b : a - b
+  if (op === 'addition') return a + b
+  if (op === 'subtraction') return a - b
+  return a * b
 }
 
 /** Find up to 3 distinct (a, b) rows where (a, b, a⊕b) are 3 distinct values.
@@ -1740,8 +1834,11 @@ export function generateRandomArithmetic3x3(
     })
   }
 
-  // "Wrong operation" distractor — if op was +, use a-b; if -, use a+b
-  const wrongOp: ArithOp = op === 'addition' ? 'subtraction' : 'addition'
+  // "Wrong operation" distractor — try the OTHER operations as plausible traps
+  const wrongOps: ArithOp[] = (
+    ['addition', 'subtraction', 'multiplication'] as const
+  ).filter((o) => o !== op)
+  const wrongOp: ArithOp = pick(rng, wrongOps)
   const wrongVal = applyOp(wrongOp, a2, b2)
   if (wrongVal >= spec.min && wrongVal <= spec.max && wrongVal !== c2) {
     distractorPool.push({

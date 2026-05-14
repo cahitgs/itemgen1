@@ -55,8 +55,10 @@ export type RuleKind =
   | 'dist-of-2'       // 2 variants distributed, one blank
   | 'addition'        // col0 + col1 = col2 (per row)
   | 'subtraction'     // col0 − col1 = col2 (per row)
+  | 'multiplication'  // col0 × col1 = col2 (per row)
   | 'progression'     // two-axis progression (primary along cols, secondary along rows)
   | 'rotation'        // pure rotation only — sliding window (r+c)×Δ. Asymmetric shapes only.
+  | 'mirror'          // row 1 is mirror of row 0 along an axis
   | 'pattern-completion' // big repeating pattern with a blank — "what fills the blank?"
   | 'and' | 'or' | 'xor' | 'xnor'  // logic gates on binary cells
 
