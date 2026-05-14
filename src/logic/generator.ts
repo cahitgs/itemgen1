@@ -93,6 +93,61 @@ export function isBlankCell(s: ShapeConfig): boolean {
   return s.params.blank === 1
 }
 
+// ──────────────────────────────────────────────────────────────
+// Sector-pie pattern helpers — 3 bits per sector packed into one int
+//   patternId 0 = empty
+//   patternId 1 = solid fill
+//   patternId 2 = dots
+//   patternId 3 = horizontal lines
+//   patternId 4 = vertical lines
+//   patternId 5 = diagonal '\'
+//   patternId 6 = diagonal '/'
+//   patternId 7 = cross-hatch
+// ──────────────────────────────────────────────────────────────
+
+export function packSectorPatterns(patterns: number[]): number {
+  let pack = 0
+  for (let i = 0; i < patterns.length; i++) {
+    pack |= (patterns[i] & 7) << (i * 3)
+  }
+  return pack
+}
+
+export function unpackSectorPatterns(packed: number, count: number): number[] {
+  const out: number[] = []
+  for (let i = 0; i < count; i++) {
+    out.push((packed >> (i * 3)) & 7)
+  }
+  return out
+}
+
+/** Derive a binary fillMask (which sectors are non-empty) from a packed
+ *  patterns value. Used by boolean-logic rules that operate on presence. */
+export function patternsToFillMask(packed: number, count: number): number {
+  let mask = 0
+  for (let i = 0; i < count; i++) {
+    if (((packed >> (i * 3)) & 7) > 0) mask |= 1 << i
+  }
+  return mask
+}
+
+/** Construct sectorPatterns from a fillMask, using `patternId` for every
+ *  filled sector. Used to materialize boolean-logic results back into the
+ *  pattern-rich format. */
+export function fillMaskToUniformPatterns(
+  fillMask: number,
+  count: number,
+  patternId: number = 1,
+): number {
+  let pack = 0
+  for (let i = 0; i < count; i++) {
+    if (fillMask & (1 << i)) {
+      pack |= (patternId & 7) << (i * 3)
+    }
+  }
+  return pack
+}
+
 /**
  * Build a stable structural signature of a puzzle (for dedup).
  * Two puzzles with the same signature look identical to the player.
@@ -981,39 +1036,50 @@ function randomNestedPolygonVariants(rng: Rng): ShapeConfig[] {
 
 /** Variants for sector-pie. Primary axes: sectorCount, fillMask. */
 function randomSectorPieVariants(rng: Rng): ShapeConfig[] {
-  const axis = pick(rng, ['sectorCount', 'fillMask', 'size', 'stroke'] as const)
+  const axis = pick(rng, ['sectorCount', 'sectorPatterns', 'size', 'stroke'] as const)
   const stroke = pick(rng, STROKE_PALETTE)
   const baseSize = pick(rng, SIZE_BUCKETS)
   const baseSW = randInt(rng, 2, 3)
   const baseCount = randInt(rng, 3, 6)
-  const baseMax = (1 << baseCount) - 1
-  const baseMask = randInt(rng, Math.ceil(baseMax * 0.25), Math.floor(baseMax * 0.75))
+
+  /** Build a random patterned sector array of given count. */
+  const randomPatterns = (count: number): number[] => {
+    const arr: number[] = []
+    for (let i = 0; i < count; i++) {
+      arr.push(rng() < 0.25 ? 0 : randInt(rng, 1, 7))
+    }
+    return arr
+  }
+
+  const basePatterns = packSectorPatterns(randomPatterns(baseCount))
 
   switch (axis) {
     case 'sectorCount': {
-      const counts = sample(rng, [2, 3, 4, 5, 6, 8], 3).sort((a, b) => a - b)
-      return counts.map((n) => {
-        const max = (1 << n) - 1
-        const mask = randInt(rng, Math.ceil(max * 0.25), Math.floor(max * 0.75))
-        return defaultShape('sector-pie', { sectorCount: n, fillMask: mask }, {
-          stroke, size: baseSize, strokeWidth: baseSW,
-        })
-      })
+      const counts = sample(rng, [3, 4, 5, 6, 8], 3).sort((a, b) => a - b)
+      return counts.map((n) =>
+        defaultShape('sector-pie', {
+          sectorCount: n,
+          sectorPatterns: packSectorPatterns(randomPatterns(n)),
+        }, { stroke, size: baseSize, strokeWidth: baseSW }),
+      )
     }
-    case 'fillMask': {
+    case 'sectorPatterns': {
+      // 3 visually distinct sector pattern arrangements at fixed sectorCount
       const seen = new Set<number>()
-      const masks: number[] = []
+      const packs: number[] = []
       let attempts = 0
-      while (masks.length < 3 && attempts < 40) {
+      while (packs.length < 3 && attempts < 60) {
         attempts++
-        const m = randInt(rng, 1, baseMax - 1)
-        if (seen.has(m)) continue
-        seen.add(m)
-        masks.push(m)
+        const p = packSectorPatterns(randomPatterns(baseCount))
+        if (seen.has(p)) continue
+        seen.add(p)
+        packs.push(p)
       }
-      while (masks.length < 3) masks.push(randInt(rng, 1, baseMax - 1))
-      return masks.map((m) =>
-        defaultShape('sector-pie', { sectorCount: baseCount, fillMask: m }, {
+      while (packs.length < 3) {
+        packs.push(packSectorPatterns(randomPatterns(baseCount)))
+      }
+      return packs.map((p) =>
+        defaultShape('sector-pie', { sectorCount: baseCount, sectorPatterns: p }, {
           stroke, size: baseSize, strokeWidth: baseSW,
         }),
       )
@@ -1021,7 +1087,7 @@ function randomSectorPieVariants(rng: Rng): ShapeConfig[] {
     case 'size': {
       const sizes = sample(rng, [0.5, 0.65, 0.8, 0.95], 3).sort((a, b) => a - b)
       return sizes.map((sz) =>
-        defaultShape('sector-pie', { sectorCount: baseCount, fillMask: baseMask }, {
+        defaultShape('sector-pie', { sectorCount: baseCount, sectorPatterns: basePatterns }, {
           stroke, size: sz, strokeWidth: baseSW,
         }),
       )
@@ -1029,7 +1095,7 @@ function randomSectorPieVariants(rng: Rng): ShapeConfig[] {
     case 'stroke': {
       const strokes = sample(rng, STROKE_PALETTE, 3)
       return strokes.map((stk) =>
-        defaultShape('sector-pie', { sectorCount: baseCount, fillMask: baseMask }, {
+        defaultShape('sector-pie', { sectorCount: baseCount, sectorPatterns: basePatterns }, {
           stroke: stk, size: baseSize, strokeWidth: baseSW,
         }),
       )
@@ -1349,11 +1415,17 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
       }, { stroke, size, strokeWidth })
     }
     case 'sector-pie': {
-      const sectorCount = randInt(rng, 2, 8)
-      const maxMask = (1 << sectorCount) - 1
-      // Bias toward middle-fill (1/3 to 2/3 of bits set) so puzzle is readable
-      const fillMask = randInt(rng, Math.ceil(maxMask * 0.25), Math.floor(maxMask * 0.75))
-      return defaultShape('sector-pie', { sectorCount, fillMask }, {
+      const sectorCount = randInt(rng, 3, 6)
+      // Each sector gets a random pattern. ~30% chance of empty, rest from
+      // patterns 1-7 (solid/dots/lines/etc) for visual richness.
+      const sectorPatterns: number[] = []
+      for (let i = 0; i < sectorCount; i++) {
+        sectorPatterns.push(rng() < 0.3 ? 0 : randInt(rng, 1, 7))
+      }
+      return defaultShape('sector-pie', {
+        sectorCount,
+        sectorPatterns: packSectorPatterns(sectorPatterns),
+      }, {
         stroke, size, strokeWidth,
       })
     }
@@ -1836,8 +1908,10 @@ type BoolParamMap = {
 }
 
 const BOOL_LOGIC_SHAPES: Partial<Record<ShapeKind, BoolParamMap>> = {
-  'sector-pie': { paramName: 'fillMask', countParam: 'sectorCount', defaultCount: 6 },
-  // checkerboard could work but pattern is bigger (rows*cols bits) — keep simple
+  // For sector-pie, boolean ops operate on the BINARY fill-mask (presence)
+  // derived from sectorPatterns. The result is stored back as sectorPatterns
+  // with a uniform pattern (solid) for all filled sectors.
+  'sector-pie': { paramName: 'sectorPatterns', countParam: 'sectorCount', defaultCount: 6 },
 }
 
 export function isBoolOpCompatible(shape: ShapeKind): boolean {
@@ -1881,9 +1955,15 @@ export function generateRandomBoolOp3x3(
     throw new Error(`Could not find 3 distinct rows for ${op} on ${shape}`)
   }
 
+  // Pick one pattern (1-7) to use for all filled sectors in this puzzle, so the
+  // entire puzzle is visually consistent. Pattern is decorative — boolean ops
+  // operate purely on fill/empty presence.
+  const puzzlePattern = randInt(rng, 1, 7)
+
   const makeShape = (mask: number): ShapeConfig => {
     const cell = clone(base)
-    cell.params[spec.paramName] = mask
+    // Convert binary fillMask → packed pattern with chosen patternId
+    cell.params[spec.paramName] = fillMaskToUniformPatterns(mask, bitCount, puzzlePattern)
     if (spec.countParam) cell.params[spec.countParam] = bitCount
     return cell
   }
