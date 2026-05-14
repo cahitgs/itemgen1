@@ -48,20 +48,42 @@ export function Checkerboard({ config, box = 100 }: Props) {
     }
   }
 
+  // Inset for the inner filled block. Leaves a visible gap so adjacent
+  // filled cells never merge into a single solid rectangle.
+  const inset = Math.max(1.5, Math.min(cellW, cellH) * 0.12)
+  const outlineW = Math.max(0.8, config.strokeWidth * 0.6)
+
   return (
     <g transform={`rotate(${config.rotation} ${cx} ${cy})`}>
-      {cells.map((cell, i) => (
-        <rect
-          key={i}
-          x={startX + cell.c * cellW}
-          y={startY + cell.r * cellH}
-          width={cellW}
-          height={cellH}
-          fill={cell.filled ? config.stroke : 'none'}
-          stroke={config.stroke}
-          strokeWidth={Math.max(0.5, config.strokeWidth * 0.6)}
-        />
-      ))}
+      {cells.map((cell, i) => {
+        const x = startX + cell.c * cellW
+        const y = startY + cell.r * cellH
+        return (
+          <g key={i}>
+            {/* Outline — always drawn, defines the cell border */}
+            <rect
+              x={x}
+              y={y}
+              width={cellW}
+              height={cellH}
+              fill="none"
+              stroke={config.stroke}
+              strokeWidth={outlineW}
+            />
+            {/* Inner filled block — only for filled cells. Inset on all sides
+                so two adjacent filled cells have a clear visible gap. */}
+            {cell.filled && (
+              <rect
+                x={x + inset}
+                y={y + inset}
+                width={cellW - inset * 2}
+                height={cellH - inset * 2}
+                fill={config.stroke}
+              />
+            )}
+          </g>
+        )
+      })}
     </g>
   )
 }
