@@ -90,7 +90,7 @@ const MIRROR_SHAPES: ShapeKind[] = [
 ]
 
 // Boolean logic compatible shapes — bit-mask carriers
-const BOOL_OP_SHAPES: ShapeKind[] = ['sector-pie']
+const BOOL_OP_SHAPES: ShapeKind[] = ['sector-pie', 'checkerboard']
 
 const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...ALL_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [

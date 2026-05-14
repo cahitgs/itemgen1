@@ -1912,6 +1912,9 @@ const BOOL_LOGIC_SHAPES: Partial<Record<ShapeKind, BoolParamMap>> = {
   // derived from sectorPatterns. The result is stored back as sectorPatterns
   // with a uniform pattern (solid) for all filled sectors.
   'sector-pie': { paramName: 'sectorPatterns', countParam: 'sectorCount', defaultCount: 6 },
+  // For checkerboard, the `pattern` param IS already a bit-mask. The "bit count"
+  // is rows × cols (multi-param). Special-cased in generateRandomBoolOp3x3.
+  checkerboard: { paramName: 'pattern', defaultCount: 9 },
 }
 
 export function isBoolOpCompatible(shape: ShapeKind): boolean {
@@ -1927,10 +1930,22 @@ export function generateRandomBoolOp3x3(
   if (!spec) throw new Error(`Bool op rule not supported for "${shape}"`)
 
   const base = randomBaseShape(shape, rng)
-  // Fix the bit-count for the puzzle (so all cells have same sector count)
-  const bitCount = Math.max(3, Math.min(6, Math.round(
-    spec.countParam ? (base.params[spec.countParam] ?? spec.defaultCount) : spec.defaultCount,
-  )))
+  // Compute bit-count per shape. Differs by carrier:
+  //   sector-pie  → sectorCount (clamped 3-6 for legibility)
+  //   checkerboard → rows × cols (4-16 bits)
+  let bitCount: number
+  if (shape === 'sector-pie') {
+    bitCount = Math.max(3, Math.min(6, Math.round(base.params.sectorCount ?? spec.defaultCount)))
+  } else if (shape === 'checkerboard') {
+    const rows = Math.max(2, Math.min(4, Math.round(base.params.rows ?? 3)))
+    const cols = Math.max(2, Math.min(4, Math.round(base.params.cols ?? 3)))
+    bitCount = rows * cols
+    // Persist the clamped rows/cols back into base so all cells use the same dims
+    base.params.rows = rows
+    base.params.cols = cols
+  } else {
+    bitCount = spec.defaultCount
+  }
   const fullMask = (1 << bitCount) - 1
 
   // Pick 3 (a, b) pairs such that c = a op b is non-trivial and rows are diverse.
@@ -1955,16 +1970,20 @@ export function generateRandomBoolOp3x3(
     throw new Error(`Could not find 3 distinct rows for ${op} on ${shape}`)
   }
 
-  // Pick one pattern (1-7) to use for all filled sectors in this puzzle, so the
-  // entire puzzle is visually consistent. Pattern is decorative — boolean ops
-  // operate purely on fill/empty presence.
-  const puzzlePattern = randInt(rng, 1, 7)
+  // For sector-pie: pick one pattern (1-7) to use for all filled sectors so
+  // the entire puzzle is visually consistent. Pattern is decorative; boolean
+  // ops still operate on fill/empty presence.
+  const puzzlePattern = shape === 'sector-pie' ? randInt(rng, 1, 7) : 1
 
   const makeShape = (mask: number): ShapeConfig => {
     const cell = clone(base)
-    // Convert binary fillMask → packed pattern with chosen patternId
-    cell.params[spec.paramName] = fillMaskToUniformPatterns(mask, bitCount, puzzlePattern)
-    if (spec.countParam) cell.params[spec.countParam] = bitCount
+    if (shape === 'sector-pie') {
+      // Convert binary fillMask → packed pattern with chosen patternId
+      cell.params[spec.paramName] = fillMaskToUniformPatterns(mask, bitCount, puzzlePattern)
+    } else {
+      // checkerboard / box-lines: mask is already the bit-pattern itself
+      cell.params[spec.paramName] = mask
+    }
     return cell
   }
 
