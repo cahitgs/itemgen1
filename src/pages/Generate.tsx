@@ -78,19 +78,23 @@ export function Generate() {
     }
   }, [shape, rule])
 
-  // Filtered dropdowns based on current selection
+  // Dropdown visibility:
+  // - In "Pattern mode" (shape=pattern OR rule=pattern-completion), narrow
+  //   each dropdown to JUST the pattern partner so the mode is explicit.
+  // - Otherwise, show ALL options including Pattern / Pattern Completion,
+  //   so the user can always switch INTO pattern mode by picking either.
   const visibleShapes = useMemo(
     () =>
       rule === 'pattern-completion'
         ? SHAPE_OPTIONS.filter((o) => o.value === 'pattern')
-        : SHAPE_OPTIONS.filter((o) => o.value !== 'pattern'),
+        : SHAPE_OPTIONS,
     [rule],
   )
   const visibleRules = useMemo(
     () =>
       shape === 'pattern'
         ? RULE_OPTIONS.filter((o) => o.value === 'pattern-completion')
-        : RULE_OPTIONS.filter((o) => o.value !== 'pattern-completion'),
+        : RULE_OPTIONS,
     [shape],
   )
 
