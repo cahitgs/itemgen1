@@ -7,7 +7,7 @@ karıştırır, oynatır.
 > [Corvus](https://github.com/Thimbleby/Corvus) projesinden ilham alındı,
 > ancak sıfırdan modern bir stack üzerine yeniden yazıldı.
 
-🌐 **Canlı demo**: [Pages URL buraya gelecek — repoyu deploy ettikten sonra]
+🌐 **Canlı demo**: <https://cahitgs.github.io/itemgen1/>
 
 ## Özellikler
 
