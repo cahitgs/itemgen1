@@ -154,6 +154,10 @@ export function rotationSymmetryFold(s: ShapeConfig): number {
   if (s.kind === 'hammer') {
     return 1 // fully asymmetric — handle + head, marker is in cell coords
   }
+  if (s.kind === 'bars') {
+    // Parallel bars are 180°-symmetric regardless of count or orientation
+    return 2
+  }
   return 1
 }
 
@@ -619,6 +623,61 @@ function randomHammerVariants(rng: Rng): ShapeConfig[] {
   }
 }
 
+/** Variants for parallel bars. Primary axis: barCount (very visible). */
+function randomBarsVariants(rng: Rng): ShapeConfig[] {
+  const axis = pick(rng, ['barCount', 'orientation', 'size', 'stroke'] as const)
+  const stroke = pick(rng, STROKE_PALETTE)
+  const baseSize = pick(rng, SIZE_BUCKETS)
+  const baseSW = randInt(rng, 2, 4)
+  const baseCount = randInt(rng, 2, 4)
+  const baseOrient = randInt(rng, 0, 2)
+
+  switch (axis) {
+    case 'barCount': {
+      // 3 distinct bar counts (e.g., {1, 3, 5}) — most readable progression
+      const counts = sample(rng, [1, 2, 3, 4, 5, 6], 3).sort((a, b) => a - b)
+      return counts.map((n) =>
+        defaultShape('bars', { barCount: n, orientation: baseOrient }, {
+          stroke,
+          size: baseSize,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'orientation': {
+      // 3 distinct orientations: horizontal, vertical, diagonal
+      const orients = sample(rng, [0, 1, 2], 3)
+      return orients.map((o) =>
+        defaultShape('bars', { barCount: baseCount, orientation: o }, {
+          stroke,
+          size: baseSize,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'size': {
+      const sizes = sample(rng, [0.5, 0.65, 0.8, 0.95], 3).sort((a, b) => a - b)
+      return sizes.map((sz) =>
+        defaultShape('bars', { barCount: baseCount, orientation: baseOrient }, {
+          stroke,
+          size: sz,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'stroke': {
+      const strokes = sample(rng, STROKE_PALETTE, 3)
+      return strokes.map((stk) =>
+        defaultShape('bars', { barCount: baseCount, orientation: baseOrient }, {
+          stroke: stk,
+          size: baseSize,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+  }
+}
+
 const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null> = {
   annulus: randomAnnulusVariants,
   dice: randomDiceVariants,
@@ -628,6 +687,7 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   petals: randomPetalsVariants,
   'spike-ring': randomSpikeRingVariants,
   hammer: randomHammerVariants,
+  bars: randomBarsVariants,
   'box-lines': null,
 }
 
@@ -651,6 +711,7 @@ const PRIMARY_PARAM: Record<
   'spike-ring': { name: 'spikeCount', min: 4, max: 16 },
   arrow: null,         // arrow's primary distinction is rotation, not a count
   hammer: null,        // hammer's primary distinction is rotation + marker position
+  bars: { name: 'barCount', min: 1, max: 6 },
   'box-lines': null,
 }
 
@@ -875,6 +936,13 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
         stroke, size, strokeWidth,
         rotation: pick(rng, [0, 45, 90, 135, 180, 225, 270, 315]),
       })
+    case 'bars':
+      return defaultShape('bars', {
+        barCount: randInt(rng, 2, 5),
+        orientation: randInt(rng, 0, 2), // 0=h, 1=v, 2=diag
+      }, {
+        stroke, size, strokeWidth,
+      })
     case 'box-lines':
       // Not yet implemented — fall back to a polygon placeholder
       return defaultShape('polygon', { sides: 4 }, { stroke, size, strokeWidth })
@@ -1037,6 +1105,11 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
         values: [start, start + step, start + 2 * step],
       }
     }
+    case 'bars': {
+      // 1 → 2 → 3 bars  (or 2 → 3 → 4, etc.)
+      const start = randInt(rng, 1, 4)
+      return { kind: 'param', name: 'barCount', values: [start, start + 1, start + 2] }
+    }
     case 'box-lines':
       return { kind: 'attr', name: 'size', values: [0.5, 0.7, 0.9] }
   }
@@ -1054,6 +1127,7 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   star:         ['size', 'strokeWidth'],
   arrow:        ['size'],                // strokeWidth on arrow outline is subtle next to head/shaft mass
   hammer:       ['size'],                // hammer is filled, strokeWidth too subtle
+  bars:         ['size', 'strokeWidth'], // line-based — strokeWidth very visible
   petals:       ['size', 'strokeWidth'],
   'spike-ring': ['size', 'strokeWidth'],
   'box-lines':  ['size', 'strokeWidth'],

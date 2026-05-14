@@ -7,6 +7,7 @@ import { Arrow } from './Arrow'
 import { Petals } from './Petals'
 import { SpikeRing } from './SpikeRing'
 import { Hammer } from './Hammer'
+import { Bars } from './Bars'
 
 interface Props {
   config: ShapeConfig
@@ -55,6 +56,8 @@ function renderShape(config: ShapeConfig, box: number) {
       return <SpikeRing config={config} box={box} />
     case 'hammer':
       return <Hammer config={config} box={box} />
+    case 'bars':
+      return <Bars config={config} box={box} />
     default:
       return (
         <text
