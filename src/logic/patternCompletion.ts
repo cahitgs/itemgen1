@@ -219,6 +219,24 @@ const MOTIF_KINDS: ShapeKind[] = [
   'spike-ring',
 ]
 
+/**
+ * Vibrant color palette for pattern motifs — chosen for high contrast on
+ * dark backgrounds and clear visual distinction between motif species.
+ *
+ * Distinct from generator.ts's STROKE_PALETTE so pattern puzzles have a
+ * more colorful "pattern" feel vs. monochrome 3×3 matrix puzzles.
+ */
+const MOTIF_COLORS = [
+  '#a78bfa', // purple
+  '#34d399', // emerald
+  '#f59e0b', // amber
+  '#60a5fa', // sky blue
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#84cc16', // lime
+  '#f87171', // red
+]
+
 // ──────────────────────────────────────────────────────────────
 // Main generator
 // ──────────────────────────────────────────────────────────────
@@ -226,11 +244,24 @@ const MOTIF_KINDS: ShapeKind[] = [
 export function generateRandomPatternCompletion(
   rng: Rng = mulberry32(randomSeed()),
 ): PatternCompletionPuzzle {
-  // 1. Motifs — pick 2 distinct shape kinds
+  // 1. Motifs — pick 2 distinct shape kinds, each with its own distinct color.
+  //    sample() guarantees no two motifs share a color, so the pattern reads
+  //    as two visually separable "species".
   const motifKinds = sample(rng, MOTIF_KINDS, 2)
-  const motifs: ShapeConfig[] = motifKinds.map((kind) => {
+  const motifColors = sample(rng, MOTIF_COLORS, motifKinds.length)
+  const motifs: ShapeConfig[] = motifKinds.map((kind, i) => {
     const base = randomBaseShape(kind, rng)
-    return { ...base, size: 0.85, strokeWidth: 1.5 }
+    const color = motifColors[i]
+    // ~40% chance to add a translucent fill of the same color — adds visual
+    // body without sacrificing the outline silhouette.
+    const useFill = rng() < 0.4
+    return {
+      ...base,
+      size: 0.85,
+      strokeWidth: 1.8,
+      stroke: color,
+      fill: useFill ? color + '33' /* 20% alpha */ : null,
+    }
   })
 
   // 2. Big grid dimensions

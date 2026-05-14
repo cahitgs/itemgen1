@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   bulkGenerate,
@@ -13,7 +13,17 @@ import { Shape } from '../components/shapes/Shape'
 import type { ShapeKind, RuleKind } from '../types/puzzle'
 import { saveTest } from '../db/dexie'
 
-const SHAPE_OPTIONS: Array<{ value: ShapeKind; label: string }> = [
+/**
+ * UI-level shape value — includes the virtual 'pattern' kind that doesn't
+ * exist in ShapeKind but is offered as a dropdown option to pair with the
+ * pattern-completion rule. When the user picks 'pattern', we substitute a
+ * real ShapeKind (e.g. 'polygon') before calling bulkGenerate, since the
+ * pattern-completion generator picks its motifs internally and ignores the
+ * shape parameter anyway.
+ */
+type ShapeUiValue = ShapeKind | 'pattern'
+
+const SHAPE_OPTIONS: Array<{ value: ShapeUiValue; label: string }> = [
   { value: 'annulus', label: 'Annulus (Halkalar)' },
   { value: 'dice', label: 'Dice (Zar)' },
   { value: 'polygon', label: 'Polygon (Çokgen)' },
@@ -22,6 +32,7 @@ const SHAPE_OPTIONS: Array<{ value: ShapeKind; label: string }> = [
   { value: 'petals', label: 'Petals (Çiçek)' },
   { value: 'spike-ring', label: 'Spike Ring (Dikenli Halka)' },
   { value: 'hammer', label: 'Hammer (Çekiç + Marker)' },
+  { value: 'pattern', label: 'Pattern (Renkli Motif Deseni)' },
 ]
 
 const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
@@ -31,7 +42,7 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'rotation', label: 'Rotation — saf dönüş (sadece Arrow/Hammer)' },
   { value: 'addition', label: 'Addition — col0 + col1 = col2' },
   { value: 'subtraction', label: 'Subtraction — col0 − col1 = col2' },
-  { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir? (şekil yok sayılır)' },
+  { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir?' },
 ]
 
 const COUNT_PRESETS = [10, 100, 1000, 5000]
@@ -41,7 +52,7 @@ const COUNT_PRESETS = [10, 100, 1000, 5000]
  * preview them, and download as JSON.
  */
 export function Generate() {
-  const [shape, setShape] = useState<ShapeKind>('annulus')
+  const [shape, setShape] = useState<ShapeUiValue>('annulus')
   const [rule, setRule] = useState<RuleKind>('dist-of-3')
   const [count, setCount] = useState(100)
   const [seed, setSeed] = useState<string>('')
@@ -56,17 +67,49 @@ export function Generate() {
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
+  // Coupling: 'pattern' shape ↔ 'pattern-completion' rule
+  // When user picks one, the other auto-snaps to the partner so the dropdowns
+  // never present incompatible combinations.
+  useEffect(() => {
+    if (shape === 'pattern' && rule !== 'pattern-completion') {
+      setRule('pattern-completion')
+    } else if (shape !== 'pattern' && rule === 'pattern-completion') {
+      setShape('pattern')
+    }
+  }, [shape, rule])
+
+  // Filtered dropdowns based on current selection
+  const visibleShapes = useMemo(
+    () =>
+      rule === 'pattern-completion'
+        ? SHAPE_OPTIONS.filter((o) => o.value === 'pattern')
+        : SHAPE_OPTIONS.filter((o) => o.value !== 'pattern'),
+    [rule],
+  )
+  const visibleRules = useMemo(
+    () =>
+      shape === 'pattern'
+        ? RULE_OPTIONS.filter((o) => o.value === 'pattern-completion')
+        : RULE_OPTIONS.filter((o) => o.value !== 'pattern-completion'),
+    [shape],
+  )
+
+  // For bulkGenerate, substitute 'pattern' with any real ShapeKind. The
+  // pattern-completion generator ignores the shape and picks motif kinds
+  // internally, so the substituted value just satisfies the type system.
+  const effectiveShape: ShapeKind = shape === 'pattern' ? 'polygon' : shape
+
   const spec: BulkSpec = useMemo(
     () => ({
-      shape,
+      shape: effectiveShape,
       rule,
       count,
       seed: seed.trim() === '' ? undefined : Number(seed),
     }),
-    [shape, rule, count, seed],
+    [effectiveShape, rule, count, seed],
   )
 
-  const supported = isSupported(shape, rule)
+  const supported = isSupported(effectiveShape, rule)
 
   function handleGenerate() {
     setError(null)
@@ -109,9 +152,11 @@ export function Generate() {
     }
     setSaving(true)
     try {
+      // For library storage, virtual 'pattern' shape is stored as the
+      // effective real ShapeKind (so Library can still display & filter it).
       await saveTest({
         name,
-        shape,
+        shape: effectiveShape,
         rule,
         count: result.puzzles.length,
         seed: result.seed,
@@ -147,9 +192,9 @@ export function Generate() {
               <select
                 className="select"
                 value={shape}
-                onChange={(e) => setShape(e.target.value as ShapeKind)}
+                onChange={(e) => setShape(e.target.value as ShapeUiValue)}
               >
-                {SHAPE_OPTIONS.map((o) => (
+                {visibleShapes.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
@@ -163,7 +208,7 @@ export function Generate() {
                 value={rule}
                 onChange={(e) => setRule(e.target.value as RuleKind)}
               >
-                {RULE_OPTIONS.map((o) => (
+                {visibleRules.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
