@@ -41,7 +41,8 @@ const SHAPE_OPTIONS: Array<{ value: ShapeUiValue; label: string }> = [
 const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'identity', label: 'Identity — hepsi aynı' },
   { value: 'dist-of-3', label: 'Distribution-of-3 — Latin karesi' },
-  { value: 'dist-of-2', label: 'Distribution-of-2 — 2 varyant + boş hücre' },
+  // Dist-of-2 implemented but hidden from UI for now. Re-enable by uncommenting:
+  // { value: 'dist-of-2', label: 'Distribution-of-2 — 2 varyant + boş hücre' },
   { value: 'progression', label: 'Progression — iki eksenli artış' },
   { value: 'rotation', label: 'Rotation — saf dönüş (sadece Arrow/Hammer)' },
   { value: 'addition', label: 'Addition — col0 + col1 = col2' },
