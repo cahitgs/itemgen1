@@ -33,6 +33,7 @@ export function PatternCompletionGrid({ puzzle, cellPx = 42 }: Props) {
         {pattern.map((row, r) =>
           row.map((motifIdx, c) => {
             const inBlank = isInsideBlank(r, c, blank)
+            const motif = motifs[motifIdx]
             return (
               <div
                 key={`${r}-${c}`}
@@ -42,7 +43,7 @@ export function PatternCompletionGrid({ puzzle, cellPx = 42 }: Props) {
                   visibility: inBlank ? 'hidden' : 'visible',
                 }}
               >
-                <Shape config={motifs[motifIdx]} px={cellPx} />
+                {motif && <Shape config={motif} px={cellPx} />}
               </div>
             )
           }),

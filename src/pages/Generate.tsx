@@ -494,11 +494,14 @@ function ResultPanel({
                         }}
                       >
                         {frag.flatMap((row, r) =>
-                          row.map((mIdx, c) => (
-                            <div key={`${r}-${c}`} style={{ width: 24, height: 24 }}>
-                              <Shape config={puzzle.motifs[mIdx]} px={24} />
-                            </div>
-                          )),
+                          row.map((mIdx, c) => {
+                            const m = puzzle.motifs[mIdx]
+                            return (
+                              <div key={`${r}-${c}`} style={{ width: 24, height: 24 }}>
+                                {m && <Shape config={m} px={24} />}
+                              </div>
+                            )
+                          }),
                         )}
                       </div>
                     </div>

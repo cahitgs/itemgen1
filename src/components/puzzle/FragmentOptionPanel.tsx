@@ -51,14 +51,17 @@ export function FragmentOptionPanel({
               }}
             >
               {fragment.map((row, r) =>
-                row.map((motifIdx, c) => (
-                  <div
-                    key={`${r}-${c}`}
-                    style={{ width: cellPx, height: cellPx }}
-                  >
-                    <Shape config={motifs[motifIdx]} px={cellPx} />
-                  </div>
-                )),
+                row.map((motifIdx, c) => {
+                  const motif = motifs[motifIdx]
+                  return (
+                    <div
+                      key={`${r}-${c}`}
+                      style={{ width: cellPx, height: cellPx }}
+                    >
+                      {motif && <Shape config={motif} px={cellPx} />}
+                    </div>
+                  )
+                }),
               )}
             </div>
             <div className="text-center text-xs text-[var(--color-text-muted)] mt-1">

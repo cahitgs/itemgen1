@@ -43,7 +43,6 @@ const nextId = (rng: Rng) =>
 // ──────────────────────────────────────────────────────────────
 
 type PatternStrategy =
-  | 'solid'           // all cells = same motif
   | 'striped-rows'    // each row uses one motif (alternates A/B/A/B...)
   | 'striped-cols'    // each col uses one motif
   | 'checkerboard'    // (r+c) % motifCount
@@ -61,10 +60,6 @@ function buildPattern(
   )
 
   switch (strategy) {
-    case 'solid':
-      // All same — use motif 0
-      return pat
-
     case 'striped-rows':
       for (let r = 0; r < rows; r++) {
         const m = r % motifCount
@@ -172,12 +167,16 @@ function generateFragmentDistractors(
   return pool
 }
 
-/** Pick `count` fragments with unique signatures, distinct from `correct`. */
+/** Pick `count` fragments with unique signatures, distinct from `correct`.
+ *  `motifCount` bounds the random fallback's motif index range, so we never
+ *  generate fragments that reference motifs beyond what the puzzle has.
+ */
 function pickDistinctFragments(
   rng: Rng,
   correct: number[][],
   pool: number[][][],
   count: number,
+  motifCount: number,
 ): number[][][] {
   const seen = new Set([fragmentSignature(correct)])
   const out: number[][][] = []
@@ -189,18 +188,28 @@ function pickDistinctFragments(
     out.push(f)
     if (out.length >= count) return out
   }
-  // Fallback: if pool exhausted, pad with random scrambles
+  // Fallback: random scrambles — but ONLY within valid motif index range.
+  // Without motifCount-bounding, indices like 5 leak through and crash
+  // downstream renderers that do motifs[idx].kind.
   let attempts = 0
+  const maxIdx = Math.max(0, motifCount - 1)
   while (out.length < count && attempts < 30) {
     attempts++
     const rand = correct.map((row) =>
-      row.map(() => randInt(rng, 0, Math.max(1, pool.length))),
+      row.map(() => randInt(rng, 0, maxIdx)),
     )
     const sig = fragmentSignature(rand)
     if (!seen.has(sig)) {
       seen.add(sig)
       out.push(rand)
     }
+  }
+  // Final fallback: pad with copies of correct if we still can't reach count
+  // (happens when the parameter space is too small for `count` distinct
+  // fragments). Duplicating correct is harmless because isPatternCompletionValid
+  // will then reject the puzzle and bulk.ts will retry.
+  while (out.length < count) {
+    out.push(cloneFragment(correct))
   }
   return out
 }
@@ -268,23 +277,16 @@ export function generateRandomPatternCompletion(
   const rows = pick(rng, [6, 7, 8])
   const cols = pick(rng, [6, 7, 8])
 
-  // 3. Strategy — for SOLID we only need 1 motif, others use 2
+  // 3. Strategy — all strategies use 2 motifs so distractors have variety
   const strategy: PatternStrategy = pick(rng, [
-    'solid',
     'striped-rows',
     'striped-cols',
     'checkerboard',
     '2x2-tile',
   ])
 
-  const motifCount = strategy === 'solid' ? 1 : motifs.length
-  const effectiveMotifs = motifs.slice(0, motifCount)
-
-  // For solid strategy, randomize WHICH single motif we use
-  if (strategy === 'solid') {
-    effectiveMotifs[0] = pick(rng, motifs)
-  }
-
+  const motifCount = motifs.length
+  const effectiveMotifs = motifs
   const pattern = buildPattern(strategy, rows, cols, motifCount, rng)
 
   // 4. Blank region — 2-3 rows × 2-3 cols, placed away from edges
@@ -308,7 +310,13 @@ export function generateRandomPatternCompletion(
     motifCount,
     rng,
   )
-  const distractors = pickDistinctFragments(rng, correctFragment, distractorPool, 3)
+  const distractors = pickDistinctFragments(
+    rng,
+    correctFragment,
+    distractorPool,
+    3,
+    motifCount,
+  )
 
   // 7. Shuffle options
   const allOptions = [correctFragment, ...distractors]
