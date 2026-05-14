@@ -164,6 +164,11 @@ export function rotationSymmetryFold(s: ShapeConfig): number {
     const cols = Math.round(s.params.cols ?? 2)
     return rows === cols ? 4 : 2
   }
+  if (s.kind === 'checkerboard') {
+    // Pattern symmetry depends on the bit-mask, but conservatively treat
+    // as fold=1 so visualSignature distinguishes all rotations.
+    return 1
+  }
   return 1
 }
 
@@ -738,6 +743,91 @@ function randomGridDotsVariants(rng: Rng): ShapeConfig[] {
   }
 }
 
+/** Variants for checkerboard. Primary axis: pattern (visually distinct bit-masks). */
+function randomCheckerboardVariants(rng: Rng): ShapeConfig[] {
+  const axis = pick(rng, ['pattern', 'rows', 'cols', 'size', 'stroke'] as const)
+  const stroke = pick(rng, STROKE_PALETTE)
+  const baseSize = pick(rng, SIZE_BUCKETS)
+  const baseSW = randInt(rng, 2, 3)
+  const baseRows = randInt(rng, 2, 4)
+  const baseCols = randInt(rng, 2, 4)
+  const maxPattern = (1 << (baseRows * baseCols)) - 1
+
+  switch (axis) {
+    case 'pattern': {
+      // 3 visually distinct fill patterns. Sample from middle-fill range to
+      // avoid all-empty/all-full ambiguity.
+      const lo = Math.ceil(maxPattern * 0.2)
+      const hi = Math.floor(maxPattern * 0.8)
+      const seen = new Set<number>()
+      const patterns: number[] = []
+      let attempts = 0
+      while (patterns.length < 3 && attempts < 40) {
+        attempts++
+        const p = randInt(rng, lo, hi)
+        if (seen.has(p)) continue
+        seen.add(p)
+        patterns.push(p)
+      }
+      // Pad if we didn't find 3
+      while (patterns.length < 3) patterns.push(randInt(rng, lo, hi))
+      return patterns.map((p) =>
+        defaultShape('checkerboard', { rows: baseRows, cols: baseCols, pattern: p }, {
+          stroke,
+          size: baseSize,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'rows': {
+      const rowSet = sample(rng, [2, 3, 4], 3).sort((a, b) => a - b)
+      return rowSet.map((r) => {
+        const max = (1 << (r * baseCols)) - 1
+        const pat = randInt(rng, Math.ceil(max * 0.2), Math.floor(max * 0.8))
+        return defaultShape('checkerboard', { rows: r, cols: baseCols, pattern: pat }, {
+          stroke,
+          size: baseSize,
+          strokeWidth: baseSW,
+        })
+      })
+    }
+    case 'cols': {
+      const colSet = sample(rng, [2, 3, 4], 3).sort((a, b) => a - b)
+      return colSet.map((c) => {
+        const max = (1 << (baseRows * c)) - 1
+        const pat = randInt(rng, Math.ceil(max * 0.2), Math.floor(max * 0.8))
+        return defaultShape('checkerboard', { rows: baseRows, cols: c, pattern: pat }, {
+          stroke,
+          size: baseSize,
+          strokeWidth: baseSW,
+        })
+      })
+    }
+    case 'size': {
+      const sizes = sample(rng, [0.5, 0.65, 0.8, 0.95], 3).sort((a, b) => a - b)
+      const pat = randInt(rng, Math.ceil(maxPattern * 0.2), Math.floor(maxPattern * 0.8))
+      return sizes.map((sz) =>
+        defaultShape('checkerboard', { rows: baseRows, cols: baseCols, pattern: pat }, {
+          stroke,
+          size: sz,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'stroke': {
+      const strokes = sample(rng, STROKE_PALETTE, 3)
+      const pat = randInt(rng, Math.ceil(maxPattern * 0.2), Math.floor(maxPattern * 0.8))
+      return strokes.map((stk) =>
+        defaultShape('checkerboard', { rows: baseRows, cols: baseCols, pattern: pat }, {
+          stroke: stk,
+          size: baseSize,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+  }
+}
+
 const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null> = {
   annulus: randomAnnulusVariants,
   dice: randomDiceVariants,
@@ -749,6 +839,7 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   hammer: randomHammerVariants,
   bars: randomBarsVariants,
   'grid-dots': randomGridDotsVariants,
+  checkerboard: randomCheckerboardVariants,
   'box-lines': null,
 }
 
@@ -774,6 +865,9 @@ const PRIMARY_PARAM: Record<
   hammer: null,        // hammer's primary distinction is rotation + marker position
   bars: { name: 'barCount', min: 1, max: 6 },
   'grid-dots': { name: 'rows', min: 1, max: 4 },
+  // Checkerboard varies pattern (bit-mask), not a count — no single-axis
+  // arithmetic. Stays out of COUNT_PARAM_SHAPES in bulk.ts.
+  checkerboard: null,
   'box-lines': null,
 }
 
@@ -1013,6 +1107,16 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
       }, {
         stroke, size, strokeWidth,
       })
+    case 'checkerboard': {
+      const rows = randInt(rng, 2, 4)
+      const cols = randInt(rng, 2, 4)
+      const maxPattern = (1 << (rows * cols)) - 1
+      // Bias toward patterns with moderate fill (avoid all-empty or all-full)
+      const pattern = randInt(rng, Math.ceil(maxPattern * 0.2), Math.floor(maxPattern * 0.8))
+      return defaultShape('checkerboard', { rows, cols, pattern }, {
+        stroke, size, strokeWidth,
+      })
+    }
     case 'box-lines':
       // Not yet implemented — fall back to a polygon placeholder
       return defaultShape('polygon', { sides: 4 }, { stroke, size, strokeWidth })
@@ -1185,6 +1289,11 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
       const start = randInt(rng, 1, 2)
       return { kind: 'param', name: 'rows', values: [start, start + 1, start + 2] }
     }
+    case 'checkerboard': {
+      // rows progression: 2 → 3 → 4 (pattern auto-rederived by variant gen)
+      const start = randInt(rng, 2, 2)
+      return { kind: 'param', name: 'rows', values: [start, start + 1, start + 2] }
+    }
     case 'box-lines':
       return { kind: 'attr', name: 'size', values: [0.5, 0.7, 0.9] }
   }
@@ -1204,6 +1313,7 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   hammer:       ['size'],                // hammer is filled, strokeWidth too subtle
   bars:         ['size', 'strokeWidth'], // line-based — strokeWidth very visible
   'grid-dots':  ['size'],                // dots are filled, strokeWidth doesn't apply
+  checkerboard: ['size'],                // grid lines exist but pattern variation dominates
   petals:       ['size', 'strokeWidth'],
   'spike-ring': ['size', 'strokeWidth'],
   'box-lines':  ['size', 'strokeWidth'],

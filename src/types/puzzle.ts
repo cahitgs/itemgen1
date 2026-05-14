@@ -24,6 +24,7 @@ export type ShapeKind =
   | 'hammer'       // asymmetric T/hammer with optional corner marker
   | 'bars'         // N parallel line segments (1-6), with orientation
   | 'grid-dots'    // rectangular m×n grid of dots
+  | 'checkerboard' // m×n grid of filled/empty cells (bit-mask)
   | 'box-lines'    // box with internal lines (legacy Corvus)
 
 /** Per-cell shape parameters. */

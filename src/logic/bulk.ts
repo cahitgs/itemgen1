@@ -62,7 +62,7 @@ const COUNT_PARAM_SHAPES: ShapeKind[] = [
 ]
 // Shapes available for visual-only rules
 const ALL_SHAPES: ShapeKind[] = [
-  'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring', 'hammer', 'bars', 'grid-dots',
+  'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring', 'hammer', 'bars', 'grid-dots', 'checkerboard',
 ]
 // Rotation-asymmetric shapes — the only ones where a pure-rotation rule
 // produces visually distinct cells in every grid position.
