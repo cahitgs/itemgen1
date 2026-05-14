@@ -1103,6 +1103,50 @@ function randomSectorPieVariants(rng: Rng): ShapeConfig[] {
   }
 }
 
+/**
+ * Block-letter variant generator. Each call returns 3 distinct ShapeConfigs
+ * differing along ONE axis (preset index, color, or size).
+ *
+ * The block-letter pool has 8 asymmetric presets (F/L/T/P/J/S/Z-like glyphs
+ * in 3×3 grid). Each preset is asymmetric under both axes, so any flip
+ * produces a visually distinct image.
+ */
+function randomBlockLetterVariants(rng: Rng): ShapeConfig[] {
+  const axis = pick(rng, ['patternIndex', 'stroke', 'size'] as const)
+  const stroke = pick(rng, STROKE_PALETTE)
+  const baseSize = pick(rng, SIZE_BUCKETS)
+  const baseSW = randInt(rng, 2, 4)
+  const baseIdx = randInt(rng, 0, 7)
+  const baseRotation = pick(rng, [0, 90, 180, 270])
+
+  switch (axis) {
+    case 'patternIndex': {
+      const indices = sample(rng, [0, 1, 2, 3, 4, 5, 6, 7], 3)
+      return indices.map((idx) =>
+        defaultShape('block-letter', { patternIndex: idx }, {
+          stroke, size: baseSize, strokeWidth: baseSW, rotation: baseRotation,
+        }),
+      )
+    }
+    case 'stroke': {
+      const strokes = sample(rng, STROKE_PALETTE, 3)
+      return strokes.map((stk) =>
+        defaultShape('block-letter', { patternIndex: baseIdx }, {
+          stroke: stk, size: baseSize, strokeWidth: baseSW, rotation: baseRotation,
+        }),
+      )
+    }
+    case 'size': {
+      const sizes = sample(rng, SIZE_BUCKETS, 3)
+      return sizes.map((sz) =>
+        defaultShape('block-letter', { patternIndex: baseIdx }, {
+          stroke, size: sz, strokeWidth: baseSW, rotation: baseRotation,
+        }),
+      )
+    }
+  }
+}
+
 const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null> = {
   annulus: randomAnnulusVariants,
   dice: randomDiceVariants,
@@ -1121,6 +1165,10 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   // cube-stack is a virtual shape that only the cube-projection puzzle uses;
   // it never participates in 2D variant generation (no ShapeConfig flows).
   'cube-stack': null,
+  // block-letter cycles through asymmetric presets — generator picks 3 distinct ones
+  'block-letter': randomBlockLetterVariants,
+  // reflection-source is virtual — the reflection generator picks the real shape internally
+  'reflection-source': null,
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -1156,6 +1204,10 @@ export const PRIMARY_PARAM: Record<
   'sector-pie': { name: 'sectorCount', min: 2, max: 8 },
   // Cube-stack is virtual — not used in 2D arithmetic rules.
   'cube-stack': null,
+  // Block-letter has 8 presets; "primary" param is patternIndex (0-7)
+  'block-letter': { name: 'patternIndex', min: 0, max: 7 },
+  // Reflection-source is virtual — never used in 2D arithmetic.
+  'reflection-source': null,
 }
 
 /**
@@ -1439,6 +1491,15 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
       // own data structure, not ShapeConfig. Caller should never reach here.
       throw new Error('randomBaseShape: cube-stack is virtual and cannot be rendered as ShapeConfig')
     }
+    case 'block-letter': {
+      return defaultShape('block-letter', { patternIndex: randInt(rng, 0, 7) }, {
+        stroke, size, strokeWidth, rotation: pick(rng, [0, 90, 180, 270]),
+      })
+    }
+    case 'reflection-source': {
+      // Virtual — the reflection generator picks the real shape internally.
+      throw new Error('randomBaseShape: reflection-source is virtual')
+    }
   }
 }
 
@@ -1713,6 +1774,13 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
     }
     case 'cube-stack':
       throw new Error('pickPrimaryProgression: cube-stack does not participate in progression')
+    case 'block-letter': {
+      // 3 distinct preset indices form a "progression" — any 3 of the 8 presets
+      const indices = sample(rng, [0, 1, 2, 3, 4, 5, 6, 7], 3)
+      return { kind: 'param', name: 'patternIndex', values: [indices[0], indices[1], indices[2]] }
+    }
+    case 'reflection-source':
+      throw new Error('pickPrimaryProgression: reflection-source is virtual')
   }
 }
 
@@ -1737,6 +1805,8 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   petals:       ['size', 'strokeWidth'],
   'spike-ring': ['size', 'strokeWidth'],
   'cube-stack': [],  // virtual shape — never participates in progression
+  'block-letter': ['size'], // size matters; strokeWidth too subtle on a 3×3 grid
+  'reflection-source': [], // virtual — never participates in progression
 }
 
 function pickSecondaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {

@@ -14,6 +14,7 @@ import type {
   Matrix3x3Puzzle,
   PatternCompletionPuzzle,
   PuzzleItem,
+  ReflectionPuzzle,
   RuleKind,
   ShapeKind,
 } from '../types/puzzle'
@@ -40,6 +41,10 @@ import {
   buildCubeProjectionPuzzle,
   isCubeProjectionValid,
 } from './cubeProjection'
+import {
+  buildReflectionPuzzle,
+  isReflectionPuzzleValid,
+} from './reflection'
 import { mulberry32, randomSeed } from './rng'
 
 export interface BulkSpec {
@@ -75,7 +80,7 @@ const COUNT_PARAM_SHAPES: ShapeKind[] = [
 // Shapes available for visual-only rules
 const ALL_SHAPES: ShapeKind[] = [
   'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring', 'hammer', 'bars', 'grid-dots', 'checkerboard', 'box-lines',
-  'nested-polygon', 'sector-pie',
+  'nested-polygon', 'sector-pie', 'block-letter',
 ]
 // Rotation-asymmetric shapes — the only ones where a pure-rotation rule
 // produces visually distinct cells in every grid position.
@@ -96,6 +101,11 @@ const MIRROR_SHAPES: ShapeKind[] = [
 
 // Boolean logic compatible shapes — bit-mask carriers
 const BOOL_OP_SHAPES: ShapeKind[] = ['sector-pie', 'checkerboard']
+
+// Reflection is offered through the virtual 'reflection-source' carrier only;
+// the generator picks the real asymmetric shape internally from arrow / hammer
+// / block-letter. The old 6-shape pool was retired because polygon/star/petals
+// carry symmetry folds that made flips visually indistinguishable.
 
 const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...ALL_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
@@ -125,6 +135,9 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   // Cube-projection: only supported with the virtual 'cube-stack' shape.
   // The generator ignores shape parameters anyway (3D voxel data is independent).
   ['cube-stack', 'cube-projection'],
+  // Reflection: virtual 'reflection-source' shape. Generator picks the real
+  // asymmetric carrier internally (arrow / hammer / block-letter).
+  ['reflection-source', 'reflection'],
 ]
 
 export function isSupported(shape: ShapeKind, rule: RuleKind): boolean {
@@ -177,6 +190,8 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
         return generateRandomPatternCompletion(rng)
       case 'cube-projection':
         return buildCubeProjectionPuzzle(rng)
+      case 'reflection':
+        return buildReflectionPuzzle(rng, spec.shape)
       default:
         throw new Error(`Unsupported rule for bulk: ${spec.rule}`)
     }
@@ -250,6 +265,11 @@ function isPuzzleValid(p: PuzzleItem): boolean {
   // Cube projection has its own validator (voxel + silhouette grid structure)
   if (p.type === 'cube-projection') {
     return isCubeProjectionValid(p as CubeProjectionPuzzle)
+  }
+
+  // Reflection has its own validator (4 distinct options, correct mirror axis)
+  if (p.type === 'reflection') {
+    return isReflectionPuzzleValid(p as ReflectionPuzzle)
   }
 
   // Odd-one-out: exactly ONE option must differ from the rest visually.

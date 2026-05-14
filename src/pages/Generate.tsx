@@ -11,6 +11,7 @@ import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
 import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGrid'
 import { CubePuzzleGrid } from '../components/cube/CubePuzzleGrid'
 import { CubeSilhouette } from '../components/cube/CubeSilhouette'
+import { ReflectionGrid } from '../components/reflection/ReflectionGrid'
 import { Shape } from '../components/shapes/Shape'
 import type { ShapeKind, RuleKind } from '../types/puzzle'
 import { saveTest } from '../db/dexie'
@@ -42,6 +43,8 @@ const SHAPE_OPTIONS: Array<{ value: ShapeUiValue; label: string }> = [
   { value: 'sector-pie', label: 'Sector Pie (Pasta Dilim)' },
   { value: 'pattern', label: 'Pattern (Renkli Motif Deseni)' },
   { value: 'cube-stack', label: 'Cube Stack (3D Blok Yığını)' },
+  { value: 'block-letter', label: 'Block Letter (Asimetrik F/L/T Glyph)' },
+  { value: 'reflection-source', label: 'Reflection (Otomatik karmaşık şekiller)' },
 ]
 
 const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
@@ -62,6 +65,7 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'odd-one-out', label: 'Odd-One-Out — farklı olanı bul' },
   { value: 'pattern-completion', label: 'Pattern Completion — boş yere ne gelir?' },
   { value: 'cube-projection', label: 'Cube Projection — 3D yapıdan 2D silüet' },
+  { value: 'reflection', label: 'Reflection — ayna görüntüsünü bul (sadece asimetrik şekiller)' },
 ]
 
 const COUNT_PRESETS = [10, 100, 1000, 5000]
@@ -86,8 +90,9 @@ export function Generate() {
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
-  // Coupling: 'pattern' shape ↔ 'pattern-completion' rule
-  //           'cube-stack' shape ↔ 'cube-projection' rule
+  // Coupling: 'pattern' shape       ↔ 'pattern-completion' rule
+  //           'cube-stack' shape     ↔ 'cube-projection' rule
+  //           'reflection-source'    ↔ 'reflection' rule
   // When user picks one, the other auto-snaps to the partner so the dropdowns
   // never present incompatible combinations.
   useEffect(() => {
@@ -99,6 +104,10 @@ export function Generate() {
       setRule('cube-projection')
     } else if (shape !== 'cube-stack' && rule === 'cube-projection') {
       setShape('cube-stack')
+    } else if (shape === 'reflection-source' && rule !== 'reflection') {
+      setRule('reflection')
+    } else if (shape !== 'reflection-source' && rule === 'reflection') {
+      setShape('reflection-source')
     }
   }, [shape, rule])
 
@@ -113,18 +122,40 @@ export function Generate() {
         ? SHAPE_OPTIONS.filter((o) => o.value === 'pattern')
         : rule === 'cube-projection'
           ? SHAPE_OPTIONS.filter((o) => o.value === 'cube-stack')
-          : SHAPE_OPTIONS,
+          : rule === 'reflection'
+            ? SHAPE_OPTIONS.filter((o) => o.value === 'reflection-source')
+            : SHAPE_OPTIONS,
     [rule],
   )
-  const visibleRules = useMemo(
-    () =>
-      shape === 'pattern'
-        ? RULE_OPTIONS.filter((o) => o.value === 'pattern-completion')
-        : shape === 'cube-stack'
-          ? RULE_OPTIONS.filter((o) => o.value === 'cube-projection')
-          : RULE_OPTIONS,
-    [shape],
-  )
+  const visibleRules = useMemo(() => {
+    // Virtual shapes are pinned to a single partner rule.
+    if (shape === 'pattern') {
+      return RULE_OPTIONS.filter((o) => o.value === 'pattern-completion')
+    }
+    if (shape === 'cube-stack') {
+      return RULE_OPTIONS.filter((o) => o.value === 'cube-projection')
+    }
+    if (shape === 'reflection-source') {
+      return RULE_OPTIONS.filter((o) => o.value === 'reflection')
+    }
+    // Real shapes: filter by the SUPPORTED matrix (bulk.ts) so each shape
+    // only shows rules its generator actually handles. Block-letter, for
+    // example, supports identity/dist-of-3/progression/odd-one-out plus
+    // pattern-completion — but NOT arithmetic, mirror, rotation, boolean
+    // gates, etc.
+    return RULE_OPTIONS.filter((o) => isSupported(shape, o.value))
+  }, [shape])
+
+  // If the currently selected rule is no longer in the visible list (e.g.
+  // user switched from Annulus + addition to Block-Letter — addition isn't
+  // supported), auto-snap to the first valid rule. Runs AFTER the virtual-
+  // shape coupling effect above so we don't fight with it.
+  useEffect(() => {
+    if (visibleRules.length === 0) return
+    if (!visibleRules.some((r) => r.value === rule)) {
+      setRule(visibleRules[0].value)
+    }
+  }, [visibleRules, rule])
 
   // For bulkGenerate, substitute 'pattern' with any real ShapeKind. The
   // pattern-completion generator ignores the shape and picks motif kinds
@@ -497,6 +528,8 @@ function ResultPanel({
             <PuzzleGrid puzzle={puzzle} cellPx={90} />
           ) : puzzle.type === 'cube-projection' ? (
             <CubePuzzleGrid puzzle={puzzle} stackPx={200} />
+          ) : puzzle.type === 'reflection' ? (
+            <ReflectionGrid puzzle={puzzle} px={140} />
           ) : puzzle.type === 'odd-one-out' ? (
             <div className="text-sm text-[var(--color-text-muted)] italic px-4 py-8">
               Odd-One-Out: tüm seçenekler sağda gösteriliyor
@@ -567,7 +600,20 @@ function ResultPanel({
                           <CubeSilhouette grid={opt.grid} px={84} />
                         </div>
                       ))
-                    : null}
+                    : puzzle.type === 'reflection'
+                      ? puzzle.options.map((opt, i) => (
+                          <div
+                            key={i}
+                            className={`w-20 h-20 rounded-lg flex items-center justify-center ${
+                              i === puzzle.correctIndex
+                                ? 'bg-[var(--color-surface-2)] ring-2 ring-[var(--color-success)]'
+                                : 'bg-[var(--color-surface-2)]'
+                            }`}
+                          >
+                            <Shape config={opt} px={70} />
+                          </div>
+                        ))
+                      : null}
             </div>
             <pre className="mt-4 text-xs text-[var(--color-text-muted)] bg-[var(--color-surface-2)] p-3 rounded max-w-md overflow-auto">
 {`id:    ${puzzle.id}

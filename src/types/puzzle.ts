@@ -29,6 +29,8 @@ export type ShapeKind =
   | 'sector-pie'   // pie chart with N filled/empty sectors
   | 'box-lines'    // box with internal lines (legacy Corvus)
   | 'cube-stack'   // 3D isometric block stack (used by cube-projection puzzle)
+  | 'block-letter' // 3×3 grid of asymmetric F/L/T/P/J/S/Z-like glyphs
+  | 'reflection-source' // virtual carrier for reflection puzzles (generator picks internally)
 
 /** Per-cell shape parameters. */
 export interface ShapeConfig {
@@ -66,6 +68,7 @@ export type RuleKind =
   | 'odd-one-out'    // N items, one breaks the pattern — pick the different one
   | 'and' | 'or' | 'xor' | 'xnor'  // logic gates on binary cells
   | 'cube-projection' // 3D block stack → "which 2D silhouette appears from axis X?"
+  | 'reflection'      // single-shape mirror puzzle — "which is the true reflection over axis X?"
 
 // ──────────────────────────────────────────────────────────────
 // Puzzle items (discriminated by `type`)
@@ -156,6 +159,28 @@ export interface CubeProjectionPuzzle extends PuzzleBase {
   correctIndex: number
 }
 
+/**
+ * Reflection puzzle ("which option is the true mirror of the source shape
+ * across the given axis?").
+ *
+ *   - `source` is the original ShapeConfig (no mirror applied)
+ *   - `axis` is the line the mirror is taken across:
+ *       'horizontal' → mirror over horizontal axis (top/bottom swap)
+ *       'vertical'   → mirror over vertical axis (left/right swap)
+ *   - `options[correctIndex]` has the `params.mirror` flag matching `axis`
+ *     and the same other params as `source`. The other options are
+ *     distractors (no flip, wrong axis, rotated, etc.).
+ */
+export type ReflectionAxis = 'horizontal' | 'vertical'
+
+export interface ReflectionPuzzle extends PuzzleBase {
+  type: 'reflection'
+  source: ShapeConfig
+  axis: ReflectionAxis
+  options: ShapeConfig[]
+  correctIndex: number
+}
+
 export type PuzzleItem =
   | Matrix3x3Puzzle
   | Matrix2x2Puzzle
@@ -163,6 +188,7 @@ export type PuzzleItem =
   | OddOneOutPuzzle
   | PatternCompletionPuzzle
   | CubeProjectionPuzzle
+  | ReflectionPuzzle
 
 // ──────────────────────────────────────────────────────────────
 // Test sessions & results

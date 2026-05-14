@@ -13,10 +13,11 @@ interface Props {
 }
 
 /** Shape display label for the dropdown (Turkish + technical name).
- *  Note: `cube-stack` is intentionally omitted — it's a virtual ShapeKind
- *  used only by the Cube Projection puzzle type (which has its own editor
- *  flow, not the per-cell ShapeConfig flow). */
-const SHAPE_LABELS: Record<Exclude<ShapeKind, 'cube-stack'>, string> = {
+ *  Note: `cube-stack` and `reflection-source` are intentionally omitted —
+ *  they are virtual ShapeKinds used only by Cube Projection and Reflection
+ *  puzzle types respectively (which build their own data, not per-cell
+ *  ShapeConfig). */
+const SHAPE_LABELS: Record<Exclude<ShapeKind, 'cube-stack' | 'reflection-source'>, string> = {
   annulus: 'Halkalar (Annulus)',
   dice: 'Zar (Dice)',
   polygon: 'Çokgen (Polygon)',
@@ -31,6 +32,7 @@ const SHAPE_LABELS: Record<Exclude<ShapeKind, 'cube-stack'>, string> = {
   'nested-polygon': 'İç İçe Çokgen (Nested-Polygon)',
   'sector-pie': 'Pasta Dilim (Sector-Pie)',
   'box-lines': 'Kutu Çizgileri (Box-Lines)',
+  'block-letter': 'Blok Glyph (F/L/T)',
 }
 
 const SHAPE_KINDS = Object.keys(SHAPE_LABELS) as ShapeKind[]
@@ -50,7 +52,7 @@ interface ParamDef {
   primary?: boolean
 }
 
-const SHAPE_PARAMS: Record<Exclude<ShapeKind, 'cube-stack'>, ParamDef[]> = {
+const SHAPE_PARAMS: Record<Exclude<ShapeKind, 'cube-stack' | 'reflection-source'>, ParamDef[]> = {
   annulus: [
     { name: 'ringCount', label: 'Halka Sayısı', min: 1, max: 4, step: 1, defaultValue: 2, primary: true },
     { name: 'gap', label: 'Halka Aralığı', min: 0.05, max: 0.3, step: 0.01, defaultValue: 0.15 },
@@ -106,6 +108,9 @@ const SHAPE_PARAMS: Record<Exclude<ShapeKind, 'cube-stack'>, ParamDef[]> = {
     { name: 'sectorCount', label: 'Dilim Sayısı', min: 2, max: 8, step: 1, defaultValue: 4, primary: true },
   ],
   'box-lines': [],
+  'block-letter': [
+    { name: 'patternIndex', label: 'Glyph (0-7: F/L/T/P/J/S/Z…)', min: 0, max: 7, step: 1, defaultValue: 0, primary: true },
+  ],
 }
 
 /** Default param dictionary for a given shape kind. */
