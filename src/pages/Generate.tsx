@@ -36,6 +36,8 @@ const SHAPE_OPTIONS: Array<{ value: ShapeUiValue; label: string }> = [
   { value: 'grid-dots', label: 'Grid-Dots (Nokta Izgarası)' },
   { value: 'checkerboard', label: 'Checkerboard (Dolu/Boş Kareler)' },
   { value: 'box-lines', label: 'Box-Lines (Kutu + İç Çizgiler)' },
+  { value: 'nested-polygon', label: 'Nested Polygon (İç İçe Çokgen)' },
+  { value: 'sector-pie', label: 'Sector Pie (Pasta Dilim)' },
   { value: 'pattern', label: 'Pattern (Renkli Motif Deseni)' },
 ]
 

@@ -25,6 +25,8 @@ export type ShapeKind =
   | 'bars'         // N parallel line segments (1-6), with orientation
   | 'grid-dots'    // rectangular m×n grid of dots
   | 'checkerboard' // m×n grid of filled/empty cells (bit-mask)
+  | 'nested-polygon' // polygon inside polygon (outer + inner)
+  | 'sector-pie'   // pie chart with N filled/empty sectors
   | 'box-lines'    // box with internal lines (legacy Corvus)
 
 /** Per-cell shape parameters. */

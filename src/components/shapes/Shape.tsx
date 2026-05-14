@@ -11,6 +11,8 @@ import { Bars } from './Bars'
 import { GridDots } from './GridDots'
 import { Checkerboard } from './Checkerboard'
 import { BoxLines } from './BoxLines'
+import { NestedPolygon } from './NestedPolygon'
+import { SectorPie } from './SectorPie'
 
 interface Props {
   config: ShapeConfig
@@ -67,6 +69,10 @@ function renderShape(config: ShapeConfig, box: number) {
       return <Checkerboard config={config} box={box} />
     case 'box-lines':
       return <BoxLines config={config} box={box} />
+    case 'nested-polygon':
+      return <NestedPolygon config={config} box={box} />
+    case 'sector-pie':
+      return <SectorPie config={config} box={box} />
     default:
       return (
         <text

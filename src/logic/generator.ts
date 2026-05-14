@@ -197,6 +197,16 @@ export function rotationSymmetryFold(s: ShapeConfig): number {
     // Pattern (lineMask) symmetry depends on bits — conservative fold=1.
     return 1
   }
+  if (s.kind === 'nested-polygon') {
+    // gcd of inner and outer sides — be conservative with min
+    const outer = Math.max(3, Math.round(s.params.outerSides ?? 4))
+    const inner = Math.max(3, Math.round(s.params.innerSides ?? 4))
+    return Math.min(outer, inner)
+  }
+  if (s.kind === 'sector-pie') {
+    // Pattern (fillMask) determines symmetry — conservative fold=1.
+    return 1
+  }
   return 1
 }
 
@@ -911,6 +921,118 @@ function randomBoxLinesVariants(rng: Rng): ShapeConfig[] {
   }
 }
 
+/** Variants for nested-polygon. Primary axes: outerSides, innerSides. */
+function randomNestedPolygonVariants(rng: Rng): ShapeConfig[] {
+  const axis = pick(rng, ['outerSides', 'innerSides', 'innerScale', 'size'] as const)
+  const stroke = pick(rng, STROKE_PALETTE)
+  const baseSize = pick(rng, SIZE_BUCKETS)
+  const baseSW = randInt(rng, 2, 3)
+  const baseOuter = randInt(rng, 3, 7)
+  const baseInner = randInt(rng, 3, 7)
+  const baseInnerScale = pick(rng, [0.4, 0.5, 0.6])
+
+  switch (axis) {
+    case 'outerSides': {
+      const sides = sample(rng, [3, 4, 5, 6, 7, 8], 3).sort((a, b) => a - b)
+      return sides.map((s) =>
+        defaultShape('nested-polygon', {
+          outerSides: s,
+          innerSides: baseInner,
+          innerScale: baseInnerScale,
+        }, { stroke, size: baseSize, strokeWidth: baseSW }),
+      )
+    }
+    case 'innerSides': {
+      const sides = sample(rng, [3, 4, 5, 6, 7, 8], 3).sort((a, b) => a - b)
+      return sides.map((s) =>
+        defaultShape('nested-polygon', {
+          outerSides: baseOuter,
+          innerSides: s,
+          innerScale: baseInnerScale,
+        }, { stroke, size: baseSize, strokeWidth: baseSW }),
+      )
+    }
+    case 'innerScale': {
+      const scales = sample(rng, [0.3, 0.45, 0.6, 0.75], 3).sort((a, b) => a - b)
+      return scales.map((s) =>
+        defaultShape('nested-polygon', {
+          outerSides: baseOuter,
+          innerSides: baseInner,
+          innerScale: s,
+        }, { stroke, size: baseSize, strokeWidth: baseSW }),
+      )
+    }
+    case 'size': {
+      const sizes = sample(rng, [0.5, 0.65, 0.8, 0.95], 3).sort((a, b) => a - b)
+      return sizes.map((sz) =>
+        defaultShape('nested-polygon', {
+          outerSides: baseOuter,
+          innerSides: baseInner,
+          innerScale: baseInnerScale,
+        }, { stroke, size: sz, strokeWidth: baseSW }),
+      )
+    }
+  }
+}
+
+/** Variants for sector-pie. Primary axes: sectorCount, fillMask. */
+function randomSectorPieVariants(rng: Rng): ShapeConfig[] {
+  const axis = pick(rng, ['sectorCount', 'fillMask', 'size', 'stroke'] as const)
+  const stroke = pick(rng, STROKE_PALETTE)
+  const baseSize = pick(rng, SIZE_BUCKETS)
+  const baseSW = randInt(rng, 2, 3)
+  const baseCount = randInt(rng, 3, 6)
+  const baseMax = (1 << baseCount) - 1
+  const baseMask = randInt(rng, Math.ceil(baseMax * 0.25), Math.floor(baseMax * 0.75))
+
+  switch (axis) {
+    case 'sectorCount': {
+      const counts = sample(rng, [2, 3, 4, 5, 6, 8], 3).sort((a, b) => a - b)
+      return counts.map((n) => {
+        const max = (1 << n) - 1
+        const mask = randInt(rng, Math.ceil(max * 0.25), Math.floor(max * 0.75))
+        return defaultShape('sector-pie', { sectorCount: n, fillMask: mask }, {
+          stroke, size: baseSize, strokeWidth: baseSW,
+        })
+      })
+    }
+    case 'fillMask': {
+      const seen = new Set<number>()
+      const masks: number[] = []
+      let attempts = 0
+      while (masks.length < 3 && attempts < 40) {
+        attempts++
+        const m = randInt(rng, 1, baseMax - 1)
+        if (seen.has(m)) continue
+        seen.add(m)
+        masks.push(m)
+      }
+      while (masks.length < 3) masks.push(randInt(rng, 1, baseMax - 1))
+      return masks.map((m) =>
+        defaultShape('sector-pie', { sectorCount: baseCount, fillMask: m }, {
+          stroke, size: baseSize, strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'size': {
+      const sizes = sample(rng, [0.5, 0.65, 0.8, 0.95], 3).sort((a, b) => a - b)
+      return sizes.map((sz) =>
+        defaultShape('sector-pie', { sectorCount: baseCount, fillMask: baseMask }, {
+          stroke, size: sz, strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'stroke': {
+      const strokes = sample(rng, STROKE_PALETTE, 3)
+      return strokes.map((stk) =>
+        defaultShape('sector-pie', { sectorCount: baseCount, fillMask: baseMask }, {
+          stroke: stk, size: baseSize, strokeWidth: baseSW,
+        }),
+      )
+    }
+  }
+}
+
 const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null> = {
   annulus: randomAnnulusVariants,
   dice: randomDiceVariants,
@@ -924,6 +1046,8 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   'grid-dots': randomGridDotsVariants,
   checkerboard: randomCheckerboardVariants,
   'box-lines': randomBoxLinesVariants,
+  'nested-polygon': randomNestedPolygonVariants,
+  'sector-pie': randomSectorPieVariants,
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -953,6 +1077,10 @@ const PRIMARY_PARAM: Record<
   checkerboard: null,
   // Box-lines uses lineMask bit-pattern — also non-arithmetic.
   'box-lines': null,
+  // Nested-polygon: outerSides as primary count (innerSides stays fixed in arithmetic)
+  'nested-polygon': { name: 'outerSides', min: 3, max: 8 },
+  // Sector-pie: sectorCount as primary count
+  'sector-pie': { name: 'sectorCount', min: 2, max: 8 },
 }
 
 /**
@@ -1206,6 +1334,22 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
       // Avoid lineMask=0 (just empty box) and lineMask=63 (cluttered)
       const lineMask = randInt(rng, 1, 31)
       return defaultShape('box-lines', { lineMask }, {
+        stroke, size, strokeWidth,
+      })
+    }
+    case 'nested-polygon': {
+      return defaultShape('nested-polygon', {
+        outerSides: randInt(rng, 3, 8),
+        innerSides: randInt(rng, 3, 8),
+        innerScale: pick(rng, [0.4, 0.5, 0.6]),
+      }, { stroke, size, strokeWidth })
+    }
+    case 'sector-pie': {
+      const sectorCount = randInt(rng, 2, 8)
+      const maxMask = (1 << sectorCount) - 1
+      // Bias toward middle-fill (1/3 to 2/3 of bits set) so puzzle is readable
+      const fillMask = randInt(rng, Math.ceil(maxMask * 0.25), Math.floor(maxMask * 0.75))
+      return defaultShape('sector-pie', { sectorCount, fillMask }, {
         stroke, size, strokeWidth,
       })
     }
@@ -1471,6 +1615,16 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
     case 'box-lines':
       // size progression — box gets larger; lineMask stays fixed
       return { kind: 'attr', name: 'size', values: [0.5, 0.7, 0.9] }
+    case 'nested-polygon': {
+      // outerSides progression: 3 → 4 → 5 (innerSides stays fixed)
+      const start = randInt(rng, 3, 6)
+      return { kind: 'param', name: 'outerSides', values: [start, start + 1, start + 2] }
+    }
+    case 'sector-pie': {
+      // sectorCount progression
+      const start = randInt(rng, 2, 6)
+      return { kind: 'param', name: 'sectorCount', values: [start, start + 1, start + 2] }
+    }
   }
 }
 
@@ -1490,6 +1644,8 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   'grid-dots':  ['size'],                // dots are filled, strokeWidth doesn't apply
   checkerboard: ['size'],                // grid lines exist but pattern variation dominates
   'box-lines':  ['size', 'strokeWidth'], // line-based — strokeWidth visible
+  'nested-polygon': ['size', 'strokeWidth'],
+  'sector-pie':     ['size', 'strokeWidth'],
   petals:       ['size', 'strokeWidth'],
   'spike-ring': ['size', 'strokeWidth'],
 }
