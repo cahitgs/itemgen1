@@ -8,6 +8,7 @@ import { Petals } from './Petals'
 import { SpikeRing } from './SpikeRing'
 import { Hammer } from './Hammer'
 import { Bars } from './Bars'
+import { GridDots } from './GridDots'
 
 interface Props {
   config: ShapeConfig
@@ -58,6 +59,8 @@ function renderShape(config: ShapeConfig, box: number) {
       return <Hammer config={config} box={box} />
     case 'bars':
       return <Bars config={config} box={box} />
+    case 'grid-dots':
+      return <GridDots config={config} box={box} />
     default:
       return (
         <text

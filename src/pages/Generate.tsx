@@ -33,6 +33,7 @@ const SHAPE_OPTIONS: Array<{ value: ShapeUiValue; label: string }> = [
   { value: 'spike-ring', label: 'Spike Ring (Dikenli Halka)' },
   { value: 'hammer', label: 'Hammer (Çekiç + Marker)' },
   { value: 'bars', label: 'Bars (Paralel Çizgi)' },
+  { value: 'grid-dots', label: 'Grid-Dots (Nokta Izgarası)' },
   { value: 'pattern', label: 'Pattern (Renkli Motif Deseni)' },
 ]
 

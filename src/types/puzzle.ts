@@ -23,6 +23,7 @@ export type ShapeKind =
   | 'spike-ring'   // ring with n outward spikes
   | 'hammer'       // asymmetric T/hammer with optional corner marker
   | 'bars'         // N parallel line segments (1-6), with orientation
+  | 'grid-dots'    // rectangular m×n grid of dots
   | 'box-lines'    // box with internal lines (legacy Corvus)
 
 /** Per-cell shape parameters. */

@@ -58,11 +58,11 @@ export interface BulkResult {
 
 // Shapes with a count-typed primary parameter (eligible for arithmetic rules)
 const COUNT_PARAM_SHAPES: ShapeKind[] = [
-  'annulus', 'dice', 'polygon', 'star', 'petals', 'spike-ring', 'bars',
+  'annulus', 'dice', 'polygon', 'star', 'petals', 'spike-ring', 'bars', 'grid-dots',
 ]
 // Shapes available for visual-only rules
 const ALL_SHAPES: ShapeKind[] = [
-  'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring', 'hammer', 'bars',
+  'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring', 'hammer', 'bars', 'grid-dots',
 ]
 // Rotation-asymmetric shapes — the only ones where a pure-rotation rule
 // produces visually distinct cells in every grid position.

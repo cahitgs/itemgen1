@@ -158,6 +158,12 @@ export function rotationSymmetryFold(s: ShapeConfig): number {
     // Parallel bars are 180°-symmetric regardless of count or orientation
     return 2
   }
+  if (s.kind === 'grid-dots') {
+    // Square grids (rows==cols) are 4-fold; rectangular grids are 2-fold
+    const rows = Math.round(s.params.rows ?? 2)
+    const cols = Math.round(s.params.cols ?? 2)
+    return rows === cols ? 4 : 2
+  }
   return 1
 }
 
@@ -678,6 +684,60 @@ function randomBarsVariants(rng: Rng): ShapeConfig[] {
   }
 }
 
+/** Variants for grid-dots. Primary axes: rows, cols (both highly visible). */
+function randomGridDotsVariants(rng: Rng): ShapeConfig[] {
+  const axis = pick(rng, ['rows', 'cols', 'size', 'stroke'] as const)
+  const stroke = pick(rng, STROKE_PALETTE)
+  const baseSize = pick(rng, SIZE_BUCKETS)
+  const baseSW = randInt(rng, 2, 3)
+  const baseRows = randInt(rng, 2, 4)
+  const baseCols = randInt(rng, 2, 4)
+  const baseDotSize = pick(rng, [0.06, 0.08, 0.1])
+
+  switch (axis) {
+    case 'rows': {
+      const rowSet = sample(rng, [1, 2, 3, 4], 3).sort((a, b) => a - b)
+      return rowSet.map((r) =>
+        defaultShape('grid-dots', { rows: r, cols: baseCols, dotSize: baseDotSize }, {
+          stroke,
+          size: baseSize,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'cols': {
+      const colSet = sample(rng, [1, 2, 3, 4], 3).sort((a, b) => a - b)
+      return colSet.map((c) =>
+        defaultShape('grid-dots', { rows: baseRows, cols: c, dotSize: baseDotSize }, {
+          stroke,
+          size: baseSize,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'size': {
+      const sizes = sample(rng, [0.5, 0.65, 0.8, 0.95], 3).sort((a, b) => a - b)
+      return sizes.map((sz) =>
+        defaultShape('grid-dots', { rows: baseRows, cols: baseCols, dotSize: baseDotSize }, {
+          stroke,
+          size: sz,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+    case 'stroke': {
+      const strokes = sample(rng, STROKE_PALETTE, 3)
+      return strokes.map((stk) =>
+        defaultShape('grid-dots', { rows: baseRows, cols: baseCols, dotSize: baseDotSize }, {
+          stroke: stk,
+          size: baseSize,
+          strokeWidth: baseSW,
+        }),
+      )
+    }
+  }
+}
+
 const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null> = {
   annulus: randomAnnulusVariants,
   dice: randomDiceVariants,
@@ -688,6 +748,7 @@ const VARIANT_GENERATORS: Record<ShapeKind, ((rng: Rng) => ShapeConfig[]) | null
   'spike-ring': randomSpikeRingVariants,
   hammer: randomHammerVariants,
   bars: randomBarsVariants,
+  'grid-dots': randomGridDotsVariants,
   'box-lines': null,
 }
 
@@ -712,6 +773,7 @@ const PRIMARY_PARAM: Record<
   arrow: null,         // arrow's primary distinction is rotation, not a count
   hammer: null,        // hammer's primary distinction is rotation + marker position
   bars: { name: 'barCount', min: 1, max: 6 },
+  'grid-dots': { name: 'rows', min: 1, max: 4 },
   'box-lines': null,
 }
 
@@ -943,6 +1005,14 @@ export function randomBaseShape(kind: ShapeKind, rng: Rng): ShapeConfig {
       }, {
         stroke, size, strokeWidth,
       })
+    case 'grid-dots':
+      return defaultShape('grid-dots', {
+        rows: randInt(rng, 2, 4),
+        cols: randInt(rng, 2, 4),
+        dotSize: pick(rng, [0.06, 0.08, 0.1]),
+      }, {
+        stroke, size, strokeWidth,
+      })
     case 'box-lines':
       // Not yet implemented — fall back to a polygon placeholder
       return defaultShape('polygon', { sides: 4 }, { stroke, size, strokeWidth })
@@ -1110,6 +1180,11 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
       const start = randInt(rng, 1, 4)
       return { kind: 'param', name: 'barCount', values: [start, start + 1, start + 2] }
     }
+    case 'grid-dots': {
+      // rows progression: 1 → 2 → 3 (cols stays constant, set by base)
+      const start = randInt(rng, 1, 2)
+      return { kind: 'param', name: 'rows', values: [start, start + 1, start + 2] }
+    }
     case 'box-lines':
       return { kind: 'attr', name: 'size', values: [0.5, 0.7, 0.9] }
   }
@@ -1128,6 +1203,7 @@ const SECONDARY_AXES_BY_SHAPE: Record<ShapeKind, Array<'size' | 'strokeWidth'>> 
   arrow:        ['size'],                // strokeWidth on arrow outline is subtle next to head/shaft mass
   hammer:       ['size'],                // hammer is filled, strokeWidth too subtle
   bars:         ['size', 'strokeWidth'], // line-based — strokeWidth very visible
+  'grid-dots':  ['size'],                // dots are filled, strokeWidth doesn't apply
   petals:       ['size', 'strokeWidth'],
   'spike-ring': ['size', 'strokeWidth'],
   'box-lines':  ['size', 'strokeWidth'],
