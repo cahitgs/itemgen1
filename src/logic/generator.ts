@@ -1117,6 +1117,82 @@ export function generateRandomProgression3x3(
 }
 
 // ──────────────────────────────────────────────────────────────
+// Rule: Rotation (pure rotation, single axis)
+//
+//   Only rotation varies — every other attribute (size, color, marker, etc.)
+//   stays constant across all 9 cells. Sliding-window pattern:
+//
+//     rotation(r, c) = start + (r + c) × step    (mod 360°)
+//
+//   Example with start=0, step=45°:
+//      [  0°,  45°,  90° ]
+//      [ 45°,  90°, 135° ]
+//      [ 90°, 135°,   ?  ]   → answer = 180°
+//
+//   This rule is only meaningful for ROTATION-ASYMMETRIC shapes
+//   (rotationSymmetryFold < 4), since 90°/180°-symmetric shapes would
+//   produce visually indistinguishable cells.
+// ──────────────────────────────────────────────────────────────
+
+export function generateRandomRotation3x3(
+  shape: ShapeKind,
+  rng: Rng = mulberry32(randomSeed()),
+): Matrix3x3Puzzle {
+  // Guard: this rule requires an asymmetric shape
+  const probe = randomBaseShape(shape, rng)
+  if (rotationSymmetryFold(probe) >= 4) {
+    throw new Error(
+      `Rotation rule requires asymmetric shape (fold<4), got "${shape}"`,
+    )
+  }
+
+  // Use the probe as base — keep all attributes constant, only rotate
+  const base = probe
+  // Step large enough that consecutive cells are clearly distinct
+  const step = pick(rng, [45, 60, 90])
+  // Start angle — adds variety without making any cell rotation invisible
+  const start = pick(rng, [0, 15, 30, 45, 60, 90])
+
+  // Build 3×3 grid with sliding-window rotation
+  const cells: ShapeConfig[][] = []
+  for (let r = 0; r < 3; r++) {
+    cells[r] = []
+    for (let c = 0; c < 3; c++) {
+      const rotation = (start + (r + c) * step + 360) % 360
+      cells[r].push({ ...clone(base), rotation })
+    }
+  }
+
+  const correct = clone(cells[2][2])
+  const correctRot = correct.rotation
+
+  // Distractor pool — all are visually distinct rotations of the same hammer
+  const distractorPool: ShapeConfig[] = [
+    { ...clone(correct), rotation: (correctRot + step) % 360 },              // "next" in sequence
+    { ...clone(correct), rotation: (correctRot - step + 360) % 360 },        // "previous"
+    { ...clone(correct), rotation: (correctRot + 180) % 360 },                // opposite direction
+    { ...clone(correct), rotation: (correctRot + 90) % 360 },                 // perpendicular
+    { ...clone(correct), rotation: (correctRot + 2 * step) % 360 },           // overshoot
+  ]
+
+  const distractors = makeDistinctDistractors(rng, correct, distractorPool, 3)
+  const { result: options, permutation } = shuffleRng(rng, [correct, ...distractors])
+  const correctIndex = permutation.indexOf(0)
+
+  return {
+    id: nextId(rng),
+    type: '3x3',
+    rule: 'rotation',
+    shape,
+    cells,
+    options,
+    correctIndex,
+    optionCount: options.length,
+    difficulty: 2,
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
 // Rule: Arithmetic (Addition / Subtraction)
 //
 //   Per row:  primary(col2) = primary(col0)  ⊕  primary(col1)

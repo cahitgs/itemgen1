@@ -52,7 +52,8 @@ export type RuleKind =
   | 'dist-of-2'       // 2 variants distributed, one blank
   | 'addition'        // col0 + col1 = col2 (per row)
   | 'subtraction'     // col0 − col1 = col2 (per row)
-  | 'progression'     // a property increases/decreases along axis
+  | 'progression'     // two-axis progression (primary along cols, secondary along rows)
+  | 'rotation'        // pure rotation only — sliding window (r+c)×Δ. Asymmetric shapes only.
   | 'and' | 'or' | 'xor' | 'xnor'  // logic gates on binary cells
 
 // ──────────────────────────────────────────────────────────────

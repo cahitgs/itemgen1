@@ -15,6 +15,7 @@ import {
   generateRandomDistOf3,
   generateRandomIdentity,
   generateRandomProgression3x3,
+  generateRandomRotation3x3,
   puzzleSignature,
   visualSignature,
 } from './generator'
@@ -53,6 +54,9 @@ const COUNT_PARAM_SHAPES: ShapeKind[] = [
 const ALL_SHAPES: ShapeKind[] = [
   'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring', 'hammer',
 ]
+// Rotation-asymmetric shapes — the only ones where a pure-rotation rule
+// produces visually distinct cells in every grid position.
+const ROTATION_ONLY_SHAPES: ShapeKind[] = ['arrow', 'hammer']
 
 const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...ALL_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
@@ -64,6 +68,7 @@ const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
     [s, 'addition'],
     [s, 'subtraction'],
   ]),
+  ...ROTATION_ONLY_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'rotation']),
 ]
 
 export function isSupported(shape: ShapeKind, rule: RuleKind): boolean {
@@ -93,6 +98,8 @@ export function bulkGenerate(spec: BulkSpec): BulkResult {
         return generateRandomDistOf3(spec.shape, rng)
       case 'progression':
         return generateRandomProgression3x3(spec.shape, rng)
+      case 'rotation':
+        return generateRandomRotation3x3(spec.shape, rng)
       case 'addition':
         return generateRandomArithmetic3x3(spec.shape, 'addition', rng)
       case 'subtraction':

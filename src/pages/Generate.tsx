@@ -27,6 +27,7 @@ const RULE_OPTIONS: Array<{ value: RuleKind; label: string }> = [
   { value: 'identity', label: 'Identity — hepsi aynı' },
   { value: 'dist-of-3', label: 'Distribution-of-3 — Latin karesi' },
   { value: 'progression', label: 'Progression — iki eksenli artış' },
+  { value: 'rotation', label: 'Rotation — saf dönüş (sadece Arrow/Hammer)' },
   { value: 'addition', label: 'Addition — col0 + col1 = col2' },
   { value: 'subtraction', label: 'Subtraction — col0 − col1 = col2' },
 ]
