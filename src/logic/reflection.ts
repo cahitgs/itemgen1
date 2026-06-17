@@ -33,7 +33,12 @@ import { randomBaseShape, visualSignature } from './generator'
  *  Earlier versions included polygon/star/petals/bars but those carry their
  *  own symmetry folds (pentagon flip = pentagon, etc.) so the 4 options
  *  often looked visually identical despite distinct signatures. */
-const REFLECTION_SHAPES: ShapeKind[] = ['arrow', 'hammer', 'block-letter']
+// 'arrow' was removed: an arrow is bilaterally symmetric about its own shaft, so
+// its reflection equals a pure rotation — a solver can answer by rotating instead
+// of reflecting, breaking construct validity. hammer keeps its asymmetric corner
+// marker (reflection ≠ rotation); block-letter is restricted to non-diagonal
+// presets in forceAsymmetric (L/J/Z/S excluded — their flip equals a 90°/270° turn).
+const REFLECTION_SHAPES: ShapeKind[] = ['hammer', 'block-letter']
 
 /** Shapes the user can pick from the Generate UI for the reflection rule.
  *  The "reflection-source" virtual shape is what the UI shows; internally
@@ -152,8 +157,12 @@ function forceAsymmetric(s: ShapeConfig, kind: ShapeKind, rng: Rng): ShapeConfig
       return { ...s, rotation: pick(rng, [30, 60, 120, 150, 210, 240, 300, 330]), params }
     }
     case 'block-letter': {
-      // Already asymmetric by construction. Keep cardinal rotations for
-      // clearer mirror reading (0/90/180/270).
+      // Only presets with NO diagonal symmetry. L(1)/J(4)/Z(6)/S(7) are excluded
+      // because their horizontal/vertical mirror is byte-identical to a 90°/270°
+      // rotation of the source — a solver could rotate instead of reflect and
+      // still land on the keyed answer (construct-invalid). F/reverse-F/P/T-foot
+      // have no rotation that equals their flip.
+      params.patternIndex = pick(rng, [0, 2, 3, 5])
       return { ...s, rotation: pick(rng, [0, 90, 180, 270]), params }
     }
     default:

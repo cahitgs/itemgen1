@@ -170,6 +170,13 @@ function gridSignature(grid: number[][]): string {
   return grid.map((row) => row.join('')).join('|')
 }
 
+/** Number of distinct silhouettes across the 5 viewing axes. 1 = fully
+ *  symmetric (degenerate — every axis looks the same); higher = the "view from
+ *  axis X" question actually discriminates. */
+function countDistinctAxisSilhouettes(cubes: Cube[]): number {
+  return new Set(ALL_AXES.map((a) => gridSignature(projectCubes(cubes, a)))).size
+}
+
 // ──────────────────────────────────────────────────────────────
 // Perturbation fallback (for highly symmetric stacks)
 // ──────────────────────────────────────────────────────────────
@@ -231,7 +238,19 @@ export function buildCubeProjectionPuzzle(
   opts: CubeProjectionOptions = {},
 ): CubeProjectionPuzzle {
   const cubeCount = opts.cubeCount ?? randInt(rng, 6, 11)
-  const cubes = generateRandomCubeStack(rng, cubeCount)
+  // Prefer a stack whose axes give genuinely different silhouettes. A fully
+  // symmetric stack makes "view from axis X" meaningless (every axis identical)
+  // and forces all distractors to be mere perturbations of one silhouette.
+  let cubes = generateRandomCubeStack(rng, cubeCount)
+  let bestDistinct = countDistinctAxisSilhouettes(cubes)
+  for (let t = 0; t < 8 && bestDistinct < 3; t++) {
+    const cand = generateRandomCubeStack(rng, cubeCount)
+    const d = countDistinctAxisSilhouettes(cand)
+    if (d > bestDistinct) {
+      cubes = cand
+      bestDistinct = d
+    }
+  }
 
   // 5 axis projections
   const projections: Record<ProjectionAxis, number[][]> = {
@@ -315,6 +334,13 @@ export function isCubeProjectionValid(p: CubeProjectionPuzzle): boolean {
   for (const o of p.options) {
     if (!o.grid.some((row) => row.some((v) => v === 1))) return false
   }
+  // Reject trivial slivers — a 1-2 cell correct silhouette is imperceptible and
+  // makes distractors near-indistinguishable.
+  const correctFilled = p.options[p.correctIndex].grid.reduce(
+    (n, row) => n + row.filter((v) => v === 1).length,
+    0,
+  )
+  if (correctFilled < 3) return false
   return true
 }
 

@@ -25,7 +25,13 @@ import { type Rng, pick, randInt } from './rng'
 // Constants
 // ──────────────────────────────────────────────────────────────
 
-const FOLD_DIRECTIONS: FoldDirection[] = ['right', 'left', 'up', 'down']
+// Only 'right' and 'down' are generated. reflectHole() implements a single
+// "keep the low half (left/top), mirror to the high half" convention, which
+// matches how PaperFoldingGrid draws the folded sheet (always at the low half).
+// 'left' and 'up' produced a folded sheet whose label/arrow contradicted that
+// drawing+math, so the keyed answer was the mirror-wrong pattern. Disabled until
+// a direction-aware unfold + renderer reposition lands. See CLAUDE.md / audit.
+const FOLD_DIRECTIONS: FoldDirection[] = ['right', 'down']
 /** Paper grid size — 4×4 keeps folds clean (2×2 after 2 folds). */
 const DEFAULT_ROWS = 4
 const DEFAULT_COLS = 4

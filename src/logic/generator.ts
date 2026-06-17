@@ -177,6 +177,25 @@ export function puzzleSignature(p: PuzzleItem): string {
     const correctSig = visualSignature(p.options[p.correctIndex])
     return `${p.shape}:${p.rule}:${cellSig}#${correctSig}`
   }
+  if (p.type === 'cube-projection') {
+    // Structural signature (NOT id-based) so identical stacks dedup. id carries
+    // Date.now() so the old fallback never collapsed duplicates.
+    const cubesSig = p.cubes.map((c) => c.join(',')).sort().join(';')
+    const optSig = p.options
+      .map((o) => o.grid.map((r) => r.join('')).join('|'))
+      .join('#')
+    return `cube:${cubesSig}@${p.questionAxis}#${p.correctIndex}:${optSig}`
+  }
+  if (p.type === 'paper-folding') {
+    const optSig = p.options
+      .map((o) => [...o.holes].map((h) => `${h.row},${h.col}`).sort().join('|'))
+      .join('#')
+    return `fold:${p.rows}x${p.cols}:${p.folds.join('')}:${p.hole.row},${p.hole.col}#${p.correctIndex}:${optSig}`
+  }
+  if (p.type === 'reflection') {
+    const optSig = p.options.map(visualSignature).join(';')
+    return `refl:${visualSignature(p.source)}:${p.axis}#${p.correctIndex}:${optSig}`
+  }
   // Fallback for other puzzle types we haven't implemented yet
   return `${p.type}:${p.shape}:${p.rule}:${p.id}`
 }
@@ -257,10 +276,12 @@ export function rotationSymmetryFold(s: ShapeConfig): number {
     return 1
   }
   if (s.kind === 'nested-polygon') {
-    // gcd of inner and outer sides — be conservative with min
+    // True rotational symmetry of two concentric n-gons is gcd(outer, inner),
+    // NOT min: a square+triangle (gcd 1) looks different at every angle, but
+    // min=3 wrongly claimed 120° symmetry and over-collapsed distinct rotations.
     const outer = Math.max(3, Math.round(s.params.outerSides ?? 4))
     const inner = Math.max(3, Math.round(s.params.innerSides ?? 4))
-    return Math.min(outer, inner)
+    return gcd(outer, inner)
   }
   if (s.kind === 'sector-pie') {
     // Pattern (fillMask) determines symmetry — conservative fold=1.
@@ -275,6 +296,11 @@ const DICE_90_SYMMETRIC = new Set([1, 4, 5, 8, 9])
 const DICE_180_SYMMETRIC = new Set([2, 3, 6, 7])
 
 const round2 = (n: number) => Math.round(n * 100) / 100
+
+/** Greatest common divisor — used for true rotational symmetry of nested shapes. */
+function gcd(a: number, b: number): number {
+  return b === 0 ? Math.max(1, a) : gcd(b, a % b)
+}
 
 // ──────────────────────────────────────────────────────────────
 // Variant generators per shape kind
@@ -1214,6 +1240,58 @@ export const PRIMARY_PARAM: Record<
   'paper-fold-source': null,
 }
 
+// ──────────────────────────────────────────────────────────────
+// Perceptual count distinctness
+//
+// visualSignature treats spikeCount=15 and 16 as "distinct" because the
+// strings differ, but a human cannot count 15 vs 16 spikes on a small ring.
+// These helpers detect option pairs whose ONLY difference is a count too small
+// to perceive, so generators + isPuzzleValid can reject them.
+// ──────────────────────────────────────────────────────────────
+
+/** Minimum count delta that stays perceptible at cell render size. Radial /
+ *  dense shapes (spikes, petals) need a wider gap; small-range shapes are fine
+ *  at ±1. */
+function minPerceptibleCountDelta(kind: ShapeKind, hi: number): number {
+  switch (kind) {
+    case 'petals':
+    case 'spike-ring':
+      return hi >= 10 ? 3 : hi >= 7 ? 2 : 1
+    case 'star':
+    case 'polygon':
+    case 'nested-polygon':
+    case 'sector-pie':
+      return hi >= 7 ? 2 : 1
+    case 'dice':
+      return hi >= 7 ? 2 : 1 // 7/8/9 pip faces differ by a single center dot
+    case 'bars':
+      return hi >= 6 ? 2 : 1
+    default:
+      return 1 // annulus, grid-dots: small ranges, ±1 is visible
+  }
+}
+
+/** visualSignature with the primary count param normalized out, so two configs
+ *  that differ ONLY by their count compare equal. */
+export function countStrippedSignature(s: ShapeConfig): string {
+  const spec = PRIMARY_PARAM[s.kind]
+  if (!spec) return visualSignature(s)
+  return visualSignature({ ...s, params: { ...s.params, [spec.name]: 0 } })
+}
+
+/** True when `a` and `b` differ ONLY by their primary count and that count gap
+ *  is too small to perceive at cell size (e.g. 15 vs 16 spikes). */
+export function countConfusable(a: ShapeConfig, b: ShapeConfig): boolean {
+  if (a.kind !== b.kind) return false
+  const spec = PRIMARY_PARAM[a.kind]
+  if (!spec) return false
+  const av = Math.round(a.params[spec.name] ?? spec.min)
+  const bv = Math.round(b.params[spec.name] ?? spec.min)
+  if (av === bv) return false
+  if (countStrippedSignature(a) !== countStrippedSignature(b)) return false
+  return Math.abs(av - bv) < minPerceptibleCountDelta(a.kind, Math.max(av, bv))
+}
+
 /**
  * Produce shape-config tweaks where the primary integer param is shifted by ±delta.
  * Skips deltas that fall outside the valid range.
@@ -1329,10 +1407,15 @@ export function makeDistinctDistractors(
 ): ShapeConfig[] {
   const seen = new Set<string>([visualSignature(correct)])
   const out: ShapeConfig[] = []
+  // A candidate that differs from the answer (or another distractor) only by an
+  // imperceptible count is not a fair distractor — skip it at the source so we
+  // don't backfill e.g. a 15-spike option against a 16-spike answer.
+  const confusable = (c: ShapeConfig) =>
+    countConfusable(correct, c) || out.some((o) => countConfusable(o, c))
 
   for (const s of siblings) {
     const sig = visualSignature(s)
-    if (!seen.has(sig)) {
+    if (!seen.has(sig) && !confusable(s)) {
       seen.add(sig)
       out.push(clone(s))
       if (out.length >= count) return out
@@ -1344,7 +1427,7 @@ export function makeDistinctDistractors(
   const candidates = candidatePerturbations(correct, rng)
   for (const c of candidates) {
     const sig = visualSignature(c)
-    if (seen.has(sig)) continue
+    if (seen.has(sig) || confusable(c)) continue
     seen.add(sig)
     out.push(c)
     if (out.length >= count) return out
@@ -1711,7 +1794,7 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
       return { kind: 'param', name: 'sides', values: [start, start + 1, start + 2] }
     }
     case 'star': {
-      const start = randInt(rng, 4, 8) // 4→5→6 ... or 8→9→10
+      const start = randInt(rng, 4, 6) // cap top at 8 — 9/10 points uncountable
       return { kind: 'param', name: 'points', values: [start, start + 1, start + 2] }
     }
     case 'arrow': {
@@ -1736,7 +1819,7 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
       }
     }
     case 'petals': {
-      const start = randInt(rng, 3, 10)
+      const start = randInt(rng, 3, 6) // cap top at 8 — 9-12 petals overlap, uncountable
       return {
         kind: 'param',
         name: 'petalCount',
@@ -1745,7 +1828,8 @@ function pickPrimaryProgression(shape: ShapeKind, rng: Rng): ProgressionAxis {
     }
     case 'spike-ring': {
       const step = pick(rng, [1, 2])
-      const start = randInt(rng, 4, 16 - 2 * step)
+      // cap top value at ~8 so spikes stay countable (was up to 16)
+      const start = randInt(rng, 4, 8 - 2 * step)
       return {
         kind: 'param',
         name: 'spikeCount',
@@ -2031,8 +2115,11 @@ export function generateRandomBoolOp3x3(
   if (shape === 'sector-pie') {
     bitCount = Math.max(3, Math.min(6, Math.round(base.params.sectorCount ?? spec.defaultCount)))
   } else if (shape === 'checkerboard') {
-    const rows = Math.max(2, Math.min(4, Math.round(base.params.rows ?? 3)))
-    const cols = Math.max(2, Math.min(4, Math.round(base.params.cols ?? 3)))
+    // Cap at 3×3 (9 bits). A 4×4 grid (16 bits) requires mentally computing a
+    // bitwise op over 16 cells × 3 rows — beyond working memory — and a 1-cell
+    // distractor among 16 is imperceptible.
+    const rows = Math.max(2, Math.min(3, Math.round(base.params.rows ?? 3)))
+    const cols = Math.max(2, Math.min(3, Math.round(base.params.cols ?? 3)))
     bitCount = rows * cols
     // Persist the clamped rows/cols back into base so all cells use the same dims
     base.params.rows = rows
@@ -2100,10 +2187,12 @@ export function generateRandomBoolOp3x3(
       distractorPool.push(makeShape(w))
     }
   }
-  // Off-by-one bit flip
+  // Two-bit-flip distractors — a single flipped cell among many is too subtle
+  // to see, so flip two bits to guarantee a perceptible difference.
   for (let bit = 0; bit < bitCount; bit++) {
-    const flipped = c2 ^ (1 << bit)
-    if (flipped !== 0 && flipped !== fullMask) {
+    const second = (bit + 1) % bitCount
+    const flipped = c2 ^ (1 << bit) ^ (1 << second)
+    if (flipped !== 0 && flipped !== fullMask && flipped !== c2) {
       distractorPool.push(makeShape(flipped))
     }
   }
@@ -2147,7 +2236,12 @@ export function generateRandomOddOneOut(
   // Find a perturbation of baseShape with a visually distinct signature
   const candidates = candidatePerturbations(baseShape, rng)
   const baseSig = visualSignature(baseShape)
-  const oddShape = candidates.find((c) => visualSignature(c) !== baseSig)
+  // Skip perturbations whose only difference is an imperceptible count delta
+  // (e.g. base 12 spikes vs odd 13). candidatePerturbations is ordered, so a
+  // color/size/large-count tweak is taken instead — still a valid odd-one-out.
+  const oddShape = candidates.find(
+    (c) => visualSignature(c) !== baseSig && !countConfusable(baseShape, c),
+  )
   if (!oddShape) {
     throw new Error(`No visually-distinct perturbation found for ${shape}`)
   }
@@ -2184,11 +2278,10 @@ export function generateRandomOddOneOut(
 //   visual flip). Only meaningful for fold < 4 shapes.
 // ──────────────────────────────────────────────────────────────
 
-/** Shapes for which mirror reads as a clear visual flip. */
-const MIRROR_COMPATIBLE: ShapeKind[] = [
-  'arrow', 'hammer', 'polygon', 'star', 'petals', 'spike-ring',
-  'bars', 'box-lines',
-]
+/** Shapes for which mirror reads as a clear visual flip. Only fully asymmetric
+ *  carriers (fold === 1); rotationally-symmetric shapes made the 180° flip
+ *  invisible (degenerate). Keep in sync with MIRROR_SHAPES in bulk.ts. */
+const MIRROR_COMPATIBLE: ShapeKind[] = ['arrow', 'hammer']
 
 export function isMirrorCompatible(shape: ShapeKind): boolean {
   return MIRROR_COMPATIBLE.includes(shape)
@@ -2280,6 +2373,15 @@ export function generateRandomMirror3x3(
 
 type ArithOp = 'addition' | 'subtraction' | 'multiplication'
 
+/** Cap the count range used for arithmetic so the operands/result stay
+ *  countable. spike-ring (max 16) and petals (max 12) reach counts no human can
+ *  tell apart by ±1; star (max 10) is borderline. Other shapes keep their range. */
+const ARITH_PERCEPTIBLE_MAX: Partial<Record<ShapeKind, number>> = {
+  'spike-ring': 8,
+  petals: 8,
+  star: 8,
+}
+
 function applyOp(op: ArithOp, a: number, b: number): number {
   if (op === 'addition') return a + b
   if (op === 'subtraction') return a - b
@@ -2320,9 +2422,11 @@ export function generateRandomArithmetic3x3(
   if (!spec) {
     throw new Error(`Arithmetic rule needs a count-parameterized shape, not "${shape}"`)
   }
+  // Cap so radial/dense shapes stay countable (16 spikes is unreadable).
+  const max = Math.min(spec.max, ARITH_PERCEPTIBLE_MAX[shape] ?? spec.max)
 
   // Pick three (a, b, c) rows that satisfy the operation
-  const rows = sampleArithRows(rng, op, spec.min, spec.max)
+  const rows = sampleArithRows(rng, op, spec.min, max)
   if (rows.length < 3) {
     // Parameter range too narrow for 3 distinct rows — caller should retry or skip
     throw new Error(`Cannot find 3 distinct ${op} rows for ${shape}`)
@@ -2345,23 +2449,23 @@ export function generateRandomArithmetic3x3(
   // ── Distractor pool — Raven-style traps
   const distractorPool: ShapeConfig[] = []
 
+  // Only admit a distractor whose count is perceptibly different from the
+  // correct answer — 15 vs 16 spikes is not a fair "almost right" option.
+  const pushDistinct = (cfg: ShapeConfig) => {
+    if (!countConfusable(correct, cfg)) distractorPool.push(cfg)
+  }
+  const withCount = (v: number): ShapeConfig => ({
+    ...clone(base),
+    params: { ...base.params, [spec.name]: v },
+  })
+
   // Component distractors: the two operands of the last row, both visible in the grid
-  if (a2 !== c2) distractorPool.push(clone(cells[2][0]))
-  if (b2 !== c2 && b2 !== a2) distractorPool.push(clone(cells[2][1]))
+  if (a2 !== c2) pushDistinct(clone(cells[2][0]))
+  if (b2 !== c2 && b2 !== a2) pushDistinct(clone(cells[2][1]))
 
   // Off-by-one perturbations: tempting "almost right" answers
-  if (c2 + 1 <= spec.max) {
-    distractorPool.push({
-      ...clone(base),
-      params: { ...base.params, [spec.name]: c2 + 1 },
-    })
-  }
-  if (c2 - 1 >= spec.min) {
-    distractorPool.push({
-      ...clone(base),
-      params: { ...base.params, [spec.name]: c2 - 1 },
-    })
-  }
+  if (c2 + 1 <= max) pushDistinct(withCount(c2 + 1))
+  if (c2 - 1 >= spec.min) pushDistinct(withCount(c2 - 1))
 
   // "Wrong operation" distractor — try the OTHER operations as plausible traps
   const wrongOps: ArithOp[] = (
@@ -2369,11 +2473,8 @@ export function generateRandomArithmetic3x3(
   ).filter((o) => o !== op)
   const wrongOp: ArithOp = pick(rng, wrongOps)
   const wrongVal = applyOp(wrongOp, a2, b2)
-  if (wrongVal >= spec.min && wrongVal <= spec.max && wrongVal !== c2) {
-    distractorPool.push({
-      ...clone(base),
-      params: { ...base.params, [spec.name]: wrongVal },
-    })
+  if (wrongVal >= spec.min && wrongVal <= max && wrongVal !== c2) {
+    pushDistinct(withCount(wrongVal))
   }
 
   const distractors = makeDistinctDistractors(rng, correct, distractorPool, 3)

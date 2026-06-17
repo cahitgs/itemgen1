@@ -70,11 +70,29 @@ const SHAPE_BONUS: Record<ShapeKind, number> = {
  * where optionAdjust = +0.5 if optionCount >= 6 (more answer choices means
  * harder to scan).
  */
-export function calibrateDifficulty(p: Pick<PuzzleItem, 'rule' | 'shape' | 'optionCount'>): 1 | 2 | 3 | 4 | 5 {
+export function calibrateDifficulty(p: PuzzleItem): 1 | 2 | 3 | 4 | 5 {
   const ruleLoad = RULE_LOAD[p.rule] ?? 2
   const shapeBonus = SHAPE_BONUS[p.shape as ShapeKind] ?? 0
   const optionAdjust = p.optionCount >= 6 ? 0.5 : 0
-  const raw = ruleLoad + shapeBonus + optionAdjust
+  const raw = ruleLoad + shapeBonus + optionAdjust + instanceAdjust(p)
   const clamped = Math.max(1, Math.min(5, Math.round(raw)))
   return clamped as 1 | 2 | 3 | 4 | 5
+}
+
+/** Instance-specific load so two puzzles of the same rule+shape aren't always
+ *  scored identically (e.g. a 2-fold paper beats a 1-fold one). */
+function instanceAdjust(p: PuzzleItem): number {
+  if (p.type === 'paper-folding') return p.folds.length >= 2 ? 0.6 : -0.3
+  if (p.type === 'cube-projection') return p.cubes.length >= 9 ? 0.5 : 0
+  if (
+    p.type === '3x3' &&
+    (p.rule === 'and' || p.rule === 'or' || p.rule === 'xor' || p.rule === 'xnor')
+  ) {
+    const c0 = p.cells[0][0]
+    const bits =
+      Math.round(c0.params.rows ?? 0) * Math.round(c0.params.cols ?? 0) ||
+      Math.round(c0.params.sectorCount ?? 0)
+    return bits >= 9 ? 0.5 : 0
+  }
+  return 0
 }

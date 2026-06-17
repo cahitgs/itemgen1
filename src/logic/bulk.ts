@@ -20,6 +20,7 @@ import type {
   ShapeKind,
 } from '../types/puzzle'
 import {
+  countConfusable,
   generateRandomArithmetic3x3,
   generateRandomBoolOp3x3,
   generateRandomDistOf2,
@@ -77,11 +78,25 @@ export interface BulkResult {
   reachedCeiling: boolean
 }
 
-// Shapes with a count-typed primary parameter (eligible for arithmetic rules)
+// Shapes with a count-typed primary parameter (eligible for addition/subtraction)
 const COUNT_PARAM_SHAPES: ShapeKind[] = [
   'annulus', 'dice', 'polygon', 'star', 'petals', 'spike-ring', 'bars', 'grid-dots',
   'nested-polygon', 'sector-pie',
 ]
+// Multiplication needs a*b to stay within [min,max] with a,b,c all distinct AND
+// at least 3 such rows. Enumerating every PRIMARY_PARAM range shows only dice
+// (1..9) and sector-pie (2..8) qualify; for every other count shape the smallest
+// product already exceeds its max (e.g. polygon 3*3=9 > 8), so generation threw
+// on every attempt and the user got a silent 0-count batch. Restrict to the
+// shapes that can actually produce a puzzle.
+const MULTIPLICATION_SHAPES: ShapeKind[] = ['dice', 'sector-pie']
+// Addition/subtraction need a countable result. spike-ring (min 4 → smallest
+// sum 9), petals and star push results into the 9-16 range where the answer
+// itself is uncountable, so they are poor arithmetic carriers. Restrict to
+// shapes whose sums stay low and legible.
+const ARITH_SHAPES: ShapeKind[] = COUNT_PARAM_SHAPES.filter(
+  (s) => s !== 'spike-ring' && s !== 'petals' && s !== 'star',
+)
 // Shapes available for visual-only rules
 const ALL_SHAPES: ShapeKind[] = [
   'annulus', 'dice', 'polygon', 'star', 'arrow', 'petals', 'spike-ring', 'hammer', 'bars', 'grid-dots', 'checkerboard', 'box-lines',
@@ -98,11 +113,13 @@ const DIST_OF_2_SHAPES: ShapeKind[] = [
   'petals', 'spike-ring', 'hammer', 'bars',
 ]
 
-// Mirror compatible shapes — only those with visible rotation flip
-const MIRROR_SHAPES: ShapeKind[] = [
-  'arrow', 'hammer', 'polygon', 'star', 'petals', 'spike-ring',
-  'bars', 'box-lines',
-]
+// Mirror compatible shapes — ONLY fully asymmetric carriers (rotationSymmetryFold
+// === 1) where the 180° "flip" is always visible. polygon/star/petals/spike-ring
+// are rotationally symmetric, so for even counts a 180° rotation is identical to
+// the source → the mirror rule was invisible (degenerate, secretly an identity
+// puzzle). bars are always 180°-symmetric; box-lines is symmetric for many masks.
+// Removed all of them; arrow/hammer have fold 1 so the flip always reads.
+const MIRROR_SHAPES: ShapeKind[] = ['arrow', 'hammer']
 
 // Boolean logic compatible shapes — bit-mask carriers
 const BOOL_OP_SHAPES: ShapeKind[] = ['sector-pie', 'checkerboard']
@@ -112,21 +129,26 @@ const BOOL_OP_SHAPES: ShapeKind[] = ['sector-pie', 'checkerboard']
 // / block-letter. The old 6-shape pool was retired because polygon/star/petals
 // carry symmetry folds that made flips visually indistinguishable.
 
+// Progression needs an inferable ordinal axis. block-letter's "progression"
+// stepped through 3 arbitrary preset glyphs (F→J→Z) — there is no sequence to
+// extrapolate — so it is excluded; every other shape has a real count/size axis.
+const PROGRESSION_SHAPES: ShapeKind[] = ALL_SHAPES.filter((s) => s !== 'block-letter')
+
 const SUPPORTED: Array<[ShapeKind, RuleKind]> = [
   ...ALL_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
     [s, 'identity'],
     [s, 'dist-of-3'],
-    [s, 'progression'],
   ]),
-  ...COUNT_PARAM_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
+  ...PROGRESSION_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'progression']),
+  ...ARITH_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
     [s, 'addition'],
     [s, 'subtraction'],
   ]),
   ...ROTATION_ONLY_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'rotation']),
   ...DIST_OF_2_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'dist-of-2']),
   ...MIRROR_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'mirror']),
-  // multiplication uses same COUNT_PARAM_SHAPES filter as addition/subtraction
-  ...COUNT_PARAM_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'multiplication']),
+  // multiplication only where the range admits >=3 distinct product rows
+  ...MULTIPLICATION_SHAPES.map<[ShapeKind, RuleKind]>((s) => [s, 'multiplication']),
   // boolean logic — only on bit-mask shapes
   ...BOOL_OP_SHAPES.flatMap<[ShapeKind, RuleKind]>((s) => [
     [s, 'and'], [s, 'or'], [s, 'xor'], [s, 'xnor'],
@@ -301,6 +323,9 @@ function isPuzzleValid(p: PuzzleItem): boolean {
     // And the correctIndex must point to the odd one
     const oddSig = [...counts.entries()].find(([, c]) => c === 1)?.[0]
     if (sigs[p.correctIndex] !== oddSig) return false
+    // The odd must differ from the majority by more than an imperceptible count
+    const anyMajority = p.options[(p.correctIndex + 1) % p.options.length]
+    if (countConfusable(p.options[p.correctIndex], anyMajority)) return false
     return true
   }
 
@@ -313,6 +338,14 @@ function isPuzzleValid(p: PuzzleItem): boolean {
   // 1. Pairwise-distinct options
   const optSigs = m3.options.map(visualSignature)
   if (new Set(optSigs).size !== optSigs.length) return false
+
+  // 1b. Options must be perceptibly distinct by count too — visualSignature
+  //     calls 15 vs 16 spikes "distinct" strings, but they look identical.
+  for (let i = 0; i < m3.options.length; i++) {
+    for (let j = i + 1; j < m3.options.length; j++) {
+      if (countConfusable(m3.options[i], m3.options[j])) return false
+    }
+  }
 
   // 2. For dist-of-3: first row should have 3 distinct cells (rule visible)
   if (m3.rule === 'dist-of-3') {
@@ -347,6 +380,20 @@ function isPuzzleValid(p: PuzzleItem): boolean {
       const rowSigs = row.map(visualSignature)
       if (new Set(rowSigs).size !== 3) return false
     }
+  }
+
+  // 5. For mirror: the 180° flip must actually be VISIBLE. For a rotationally
+  //    symmetric shape the mirrored line is pixel-identical to its source, so
+  //    the rule is imperceptible. Require either the row-mirror (row2 vs row0)
+  //    or the col-mirror (col2 vs col0) to differ visually.
+  if (m3.rule === 'mirror') {
+    const rowMirrorVisible = m3.cells[2].some(
+      (c, i) => visualSignature(c) !== visualSignature(m3.cells[0][i]),
+    )
+    const colMirrorVisible = [0, 1, 2].some(
+      (r) => visualSignature(m3.cells[r][2]) !== visualSignature(m3.cells[r][0]),
+    )
+    if (!rowMirrorVisible && !colMirrorVisible) return false
   }
 
   return true
