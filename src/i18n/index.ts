@@ -6,7 +6,7 @@ export type Lang = 'tr' | 'en'
 
 const STORAGE_KEY = 'cogitem-lang'
 
-/** Stored preference wins; otherwise Turkish browsers get TR, everyone else EN. */
+/** Stored preference wins; otherwise the site opens in English. */
 function initialLang(): Lang {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -14,7 +14,7 @@ function initialLang(): Lang {
   } catch {
     /* localStorage unavailable (private mode etc.) — fall through */
   }
-  return navigator.language?.toLowerCase().startsWith('tr') ? 'tr' : 'en'
+  return 'en'
 }
 
 interface LangState {
