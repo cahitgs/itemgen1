@@ -14,6 +14,7 @@ import { PatternCompletionGrid } from '../components/puzzle/PatternCompletionGri
 import { CubePuzzleGrid } from '../components/cube/CubePuzzleGrid'
 import { ReflectionGrid } from '../components/reflection/ReflectionGrid'
 import { PaperFoldingGrid } from '../components/paperFolding/PaperFoldingGrid'
+import { useLang, useT } from '../i18n'
 
 /**
  * Mixer page: build a new test by sampling N puzzles from one or more
@@ -21,6 +22,8 @@ import { PaperFoldingGrid } from '../components/paperFolding/PaperFoldingGrid'
  * that can be saved back into the library or played immediately.
  */
 export function Mixer() {
+  const t = useT()
+  const { locale } = useLang()
   const navigate = useNavigate()
   const [tests, setTests] = useState<SavedTestMeta[] | null>(null)
   /** testId → number to draw (0 means "skip"). */
@@ -97,7 +100,7 @@ export function Mixer() {
     if (!mixed) return
     const name = saveName.trim()
     if (!name) {
-      setSaveMsg('İsim gerekli')
+      setSaveMsg(t('İsim gerekli'))
       return
     }
     setSaving(true)
@@ -112,7 +115,7 @@ export function Mixer() {
         puzzles: mixed.puzzles,
         sources: mixed.sources,
       })
-      setSaveMsg(`✓ "${name}" kaydedildi`)
+      setSaveMsg(t('✓ "{name}" kaydedildi', { name }))
       if (thenPlay) {
         navigate('/play', { state: { puzzles: mixed.puzzles, testName: name } })
       } else {
@@ -121,7 +124,7 @@ export function Mixer() {
       }
       void id
     } catch (e) {
-      setSaveMsg(`Hata: ${e instanceof Error ? e.message : String(e)}`)
+      setSaveMsg(t('Hata: {msg}', { msg: e instanceof Error ? e.message : String(e) }))
     } finally {
       setSaving(false)
     }
@@ -130,7 +133,7 @@ export function Mixer() {
   function handlePlayWithoutSave() {
     if (!mixed) return
     navigate('/play', {
-      state: { puzzles: mixed.puzzles, testName: `Mixer (${mixed.puzzles.length} soru)` },
+      state: { puzzles: mixed.puzzles, testName: t('Mixer ({n} soru)', { n: mixed.puzzles.length }) },
     })
   }
 
@@ -142,37 +145,35 @@ export function Mixer() {
             to="/"
             className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
           >
-            ← Ana Sayfa
+            {t('← Ana Sayfa')}
           </Link>
-          <h1 className="text-2xl font-light">Karışık Test Oluştur</h1>
+          <h1 className="text-2xl font-light">{t('Karışık Test Oluştur')}</h1>
           <Link to="/library" className="text-sm text-[var(--color-accent)] hover:underline">
-            Kütüphane →
+            {t('Kütüphane →')}
           </Link>
         </div>
 
         <p className="text-sm text-[var(--color-text-muted)] mb-6">
-          Kütüphandeki testlerden istediğin kadar soru çekip yeni bir karışık test
-          oluştur. Farklı şekil ve mantıklardan örnekleyerek kademeli bir
-          zorluk eğrisi yapabilirsin.
+          {t('Kütüphanedeki testlerden istediğin kadar soru çekip yeni bir karışık test oluştur. Farklı şekil ve mantıklardan örnekleyerek kademeli bir zorluk eğrisi yapabilirsin.')}
         </p>
 
         {/* ── Sources list ── */}
         {tests === null && (
           <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-12 text-center text-[var(--color-text-muted)]">
-            Yükleniyor…
+            {t('Yükleniyor…')}
           </div>
         )}
 
         {tests !== null && tests.length === 0 && (
           <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-12 text-center">
             <p className="text-[var(--color-text-muted)] mb-4">
-              Henüz kaydedilmiş test yok. Önce kütüphaneye birkaç test eklemelisin.
+              {t('Henüz kaydedilmiş test yok. Önce kütüphaneye birkaç test eklemelisin.')}
             </p>
             <Link
               to="/generate"
               className="inline-block px-6 py-2.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium transition"
             >
-              Test üretmeye git
+              {t('Test üretmeye git')}
             </Link>
           </div>
         )}
@@ -184,10 +185,10 @@ export function Mixer() {
                 <thead className="text-[var(--color-text-muted)] text-left bg-[var(--color-surface-2)]">
                   <tr>
                     <th className="px-4 py-3">Test</th>
-                    <th className="px-4 py-3">Şekil</th>
-                    <th className="px-4 py-3">Kural</th>
-                    <th className="px-4 py-3 text-right">Havuz</th>
-                    <th className="px-4 py-3 text-right">Kaç çek?</th>
+                    <th className="px-4 py-3">{t('Şekil')}</th>
+                    <th className="px-4 py-3">{t('Kural')}</th>
+                    <th className="px-4 py-3 text-right">{t('Havuz')}</th>
+                    <th className="px-4 py-3 text-right">{t('Kaç çek?')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -205,7 +206,7 @@ export function Mixer() {
                         <td className="px-4 py-3 text-[var(--color-text-muted)]">{t.shape}</td>
                         <td className="px-4 py-3 text-[var(--color-text-muted)]">{t.rule}</td>
                         <td className="px-4 py-3 text-right text-[var(--color-text-muted)]">
-                          {t.count.toLocaleString('tr-TR')}
+                          {t.count.toLocaleString(locale)}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="inline-flex gap-1">
@@ -252,19 +253,19 @@ export function Mixer() {
               <div className="flex flex-col md:flex-row md:items-end gap-4">
                 <div className="flex-1">
                   <label className="text-sm text-[var(--color-text-muted)] block mb-1.5">
-                    Tohum (opsiyonel) — aynı tohum = aynı karışım
+                    {t('Tohum (opsiyonel) — aynı tohum = aynı karışım')}
                   </label>
                   <input
                     type="text"
-                    placeholder="örn. 42"
+                    placeholder={t('örn. 42')}
                     value={seedInput}
                     onChange={(e) => setSeedInput(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-sm"
                   />
                 </div>
                 <div className="text-sm text-[var(--color-text-muted)]">
-                  Seçilen: <span className="text-[var(--color-accent)] font-medium">{totals.sources}</span> kaynak,{' '}
-                  <span className="text-[var(--color-accent)] font-medium">{totals.puzzles}</span> soru
+                  {t('Seçilen:')} <span className="text-[var(--color-accent)] font-medium">{totals.sources}</span> {t('kaynak,')}{' '}
+                  <span className="text-[var(--color-accent)] font-medium">{totals.puzzles}</span> {t('soru')}
                 </div>
                 <button
                   type="button"
@@ -272,7 +273,7 @@ export function Mixer() {
                   disabled={totals.puzzles === 0 || working}
                   className="px-6 py-2.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                 >
-                  {working ? 'Karıştırılıyor…' : 'Karıştır'}
+                  {working ? t('Karıştırılıyor…') : t('Karıştır')}
                 </button>
               </div>
             </div>
@@ -283,15 +284,15 @@ export function Mixer() {
         {mixed && (
           <>
             <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 mb-6">
-              <h2 className="text-lg font-medium mb-3">Karışım Hazır</h2>
+              <h2 className="text-lg font-medium mb-3">{t('Karışım Hazır')}</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <Stat label="Toplam soru" value={mixed.puzzles.length.toString()} accent />
-                <Stat label="Kaynak sayısı" value={mixed.sources.length.toString()} />
-                <Stat label="Tohum" value={String(mixed.seed)} mono />
+                <Stat label={t('Toplam soru')} value={mixed.puzzles.length.toString()} accent />
+                <Stat label={t('Kaynak sayısı')} value={mixed.sources.length.toString()} />
+                <Stat label={t('Tohum')} value={String(mixed.seed)} mono />
                 <Stat label="" value="" />
               </div>
               <div className="text-xs text-[var(--color-text-muted)]">
-                Kaynaklar:{' '}
+                {t('Kaynaklar:')}{' '}
                 {mixed.sources.map((s, i) => (
                   <span key={s.testId}>
                     <span className="text-[var(--color-text)]">{s.testName}</span>
@@ -305,7 +306,7 @@ export function Mixer() {
             {/* Save panel */}
             <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 mb-6">
               <label className="text-sm text-[var(--color-text-muted)] block mb-2">
-                Test ismi
+                {t('Test ismi')}
               </label>
               <div className="flex flex-col md:flex-row gap-2 mb-3">
                 <input
@@ -321,7 +322,7 @@ export function Mixer() {
                   disabled={saving}
                   className="px-4 py-2 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] disabled:opacity-50 transition cursor-pointer"
                 >
-                  {saving ? '…' : 'Kaydet'}
+                  {saving ? '…' : t('Kaydet')}
                 </button>
                 <button
                   type="button"
@@ -329,21 +330,21 @@ export function Mixer() {
                   disabled={saving}
                   className="px-4 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium disabled:opacity-50 transition cursor-pointer"
                 >
-                  Kaydet & Oyna
+                  {t('Kaydet & Oyna')}
                 </button>
                 <button
                   type="button"
                   onClick={handlePlayWithoutSave}
                   className="px-4 py-2 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition cursor-pointer"
                 >
-                  Sadece Oyna
+                  {t('Sadece Oyna')}
                 </button>
               </div>
               {saveMsg && (
                 <div className="text-sm">
                   <span
                     className={
-                      saveMsg.startsWith('Hata')
+                      /^(Hata|Error)/.test(saveMsg)
                         ? 'text-[var(--color-danger)]'
                         : 'text-[var(--color-success)]'
                     }
@@ -357,7 +358,7 @@ export function Mixer() {
             {/* Preview */}
             <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium">Önizleme</h2>
+                <h2 className="text-lg font-medium">{t('Önizleme')}</h2>
                 <div className="flex items-center gap-2 text-sm">
                   <button
                     type="button"

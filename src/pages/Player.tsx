@@ -18,6 +18,7 @@ import {
 } from '../logic/generator'
 import type { PuzzleItem, AnswerLog } from '../types/puzzle'
 import { exportAnswersToCsv } from '../utils/csv'
+import { useT } from '../i18n'
 
 type Status = 'playing' | 'feedback' | 'done'
 
@@ -37,6 +38,7 @@ interface PlayerNavState {
  *  - others (2x2, series, odd-one-out) fall back to 3×3 layout for now
  */
 export function Player() {
+  const t = useT()
   const location = useLocation()
   const nav = (location.state ?? {}) as PlayerNavState
 
@@ -48,7 +50,7 @@ export function Player() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const testName = nav.testName ?? 'Örnek Test'
+  const testName = nav.testName ?? t('Örnek Test')
 
   const [index, setIndex] = useState(0)
   const [status, setStatus] = useState<Status>('playing')
@@ -113,9 +115,9 @@ export function Player() {
     return (
       <div className="min-h-screen p-8 flex flex-col items-center">
         <div className="max-w-2xl w-full text-center">
-          <h1 className="text-4xl font-light mb-4 text-[var(--color-text)]">Test Tamamlandı</h1>
+          <h1 className="text-4xl font-light mb-4 text-[var(--color-text)]">{t('Test Tamamlandı')}</h1>
           <p className="text-xl mb-8 text-[var(--color-text-muted)]">
-            Skor: <span className="text-[var(--color-success)] font-medium">{correctCount}</span> / {answers.length}
+            {t('Skor:')} <span className="text-[var(--color-success)] font-medium">{correctCount}</span> / {answers.length}
           </p>
 
           <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 mb-6">
@@ -123,9 +125,9 @@ export function Player() {
               <thead className="text-[var(--color-text-muted)] text-left">
                 <tr>
                   <th className="py-2">#</th>
-                  <th>Doğru</th>
-                  <th>Süre</th>
-                  <th>Hover sayısı</th>
+                  <th>{t('Doğru')}</th>
+                  <th>{t('Süre')}</th>
+                  <th>{t('Hover sayısı')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,7 +137,7 @@ export function Player() {
                     <td>
                       {a.chosenIndex === -1 ? '⊘ skip' : a.correct ? '✓' : '✗'}
                     </td>
-                    <td>{(a.durationMs / 1000).toFixed(1)} sn</td>
+                    <td>{t('{s} sn', { s: (a.durationMs / 1000).toFixed(1) })}</td>
                     <td>{a.hovers.length}</td>
                   </tr>
                 ))}
@@ -149,13 +151,13 @@ export function Player() {
               onClick={downloadCsv}
               className="px-6 py-3 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium transition cursor-pointer"
             >
-              CSV İndir
+              {t('CSV İndir')}
             </button>
             <Link
               to="/"
               className="px-6 py-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
             >
-              Ana Sayfa
+              {t('Ana Sayfa')}
             </Link>
           </div>
         </div>
@@ -168,12 +170,12 @@ export function Player() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Link to="/" className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]">
-            ← Ana Sayfa
+            {t('← Ana Sayfa')}
           </Link>
           <div className="text-sm text-[var(--color-text-muted)]">
             <span className="text-[var(--color-text)] font-medium">{testName}</span>
             <span className="mx-2 opacity-50">·</span>
-            Soru {index + 1} / {puzzles.length}
+            {t('Soru {n} / {total}', { n: index + 1, total: puzzles.length })}
           </div>
           <button
             type="button"
@@ -181,7 +183,7 @@ export function Player() {
             disabled={status !== 'playing'}
             className="text-sm text-[var(--color-accent)] hover:underline disabled:opacity-40"
           >
-            Bu soruyu atla
+            {t('Bu soruyu atla')}
           </button>
         </div>
 
@@ -198,22 +200,22 @@ export function Player() {
             <PaperFoldingGrid puzzle={current} />
           ) : current.type === 'odd-one-out' ? null /* odd-one-out has no question grid */ : (
             <div className="text-[var(--color-text-muted)]">
-              Bu puzzle tipi henüz desteklenmiyor: {current.type}
+              {t('Bu puzzle tipi henüz desteklenmiyor: {type}', { type: current.type })}
             </div>
           )}
           <div className="flex flex-col gap-4 items-center">
             <p className="text-sm text-[var(--color-text-muted)]">
               {current.type === 'pattern-completion'
-                ? 'Boş alanı dolduran fragment hangisi?'
+                ? t('Boş alanı dolduran fragment hangisi?')
                 : current.type === 'odd-one-out'
-                  ? 'Diğerlerinden farklı olan hangisi?'
+                  ? t('Diğerlerinden farklı olan hangisi?')
                   : current.type === 'cube-projection'
-                    ? 'Bu yapı oktaki yönden bakıldığında hangi silüetle eşleşir?'
+                    ? t('Bu yapı oktaki yönden bakıldığında hangi silüetle eşleşir?')
                     : current.type === 'reflection'
-                      ? 'Bu şeklin verilen eksendeki ayna görüntüsü hangisidir?'
+                      ? t('Bu şeklin verilen eksendeki ayna görüntüsü hangisidir?')
                       : current.type === 'paper-folding'
-                        ? 'Kağıt açılınca delikler hangi düzende ortaya çıkar?'
-                        : 'Sağdaki seçeneklerden eksik hücreye uyanı seç:'}
+                        ? t('Kağıt açılınca delikler hangi düzende ortaya çıkar?')
+                        : t('Sağdaki seçeneklerden eksik hücreye uyanı seç:')}
             </p>
             {current.type === 'pattern-completion' ? (
               <FragmentOptionPanel
@@ -306,7 +308,7 @@ export function Player() {
                 onClick={advance}
                 className="mt-4 px-6 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium transition cursor-pointer"
               >
-                {isLast ? 'Bitir' : 'Sonraki Soru →'}
+                {isLast ? t('Bitir') : t('Sonraki Soru →')}
               </button>
             )}
           </div>

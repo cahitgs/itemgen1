@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { deleteTest, getTest, listTestsMeta, type SavedTestMeta } from '../db/dexie'
+import { useLang, useT } from '../i18n'
 
 /**
  * Library page: list of saved tests with actions (play / delete / export JSON).
  * Data lives in IndexedDB via Dexie — survives reloads and tab closures.
  */
 export function Library() {
+  const t = useT()
+  const { locale } = useLang()
   const [tests, setTests] = useState<SavedTestMeta[] | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const navigate = useNavigate()
@@ -20,7 +23,7 @@ export function Library() {
   }, [])
 
   async function handleDelete(id: number, name: string) {
-    if (!confirm(`"${name}" silinsin mi?`)) return
+    if (!confirm(t('"{name}" silinsin mi?', { name }))) return
     setBusyId(id)
     try {
       await deleteTest(id)
@@ -35,7 +38,7 @@ export function Library() {
     try {
       const test = await getTest(id)
       if (!test) {
-        alert('Test bulunamadı (silinmiş olabilir).')
+        alert(t('Test bulunamadı (silinmiş olabilir).'))
         return
       }
       navigate('/play', {
@@ -89,33 +92,33 @@ export function Library() {
             to="/"
             className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
           >
-            ← Ana Sayfa
+            {t('← Ana Sayfa')}
           </Link>
-          <h1 className="text-2xl font-light">Kütüphane</h1>
+          <h1 className="text-2xl font-light">{t('Kütüphane')}</h1>
           <Link
             to="/generate"
             className="text-sm text-[var(--color-accent)] hover:underline"
           >
-            + Yeni test üret
+            {t('+ Yeni test üret')}
           </Link>
         </div>
 
         {tests === null && (
           <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-12 text-center text-[var(--color-text-muted)]">
-            Yükleniyor…
+            {t('Yükleniyor…')}
           </div>
         )}
 
         {tests !== null && tests.length === 0 && (
           <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-12 text-center">
             <p className="text-[var(--color-text-muted)] mb-4">
-              Henüz kaydedilmiş test yok.
+              {t('Henüz kaydedilmiş test yok.')}
             </p>
             <Link
               to="/generate"
               className="inline-block px-6 py-2.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium transition"
             >
-              İlk testini üret
+              {t('İlk testini üret')}
             </Link>
           </div>
         )}
@@ -125,76 +128,76 @@ export function Library() {
             <table className="w-full text-sm">
               <thead className="text-[var(--color-text-muted)] text-left bg-[var(--color-surface-2)]">
                 <tr>
-                  <th className="px-4 py-3">İsim</th>
-                  <th className="px-4 py-3">Şekil</th>
-                  <th className="px-4 py-3">Kural</th>
-                  <th className="px-4 py-3 text-right">Adet</th>
+                  <th className="px-4 py-3">{t('İsim')}</th>
+                  <th className="px-4 py-3">{t('Şekil')}</th>
+                  <th className="px-4 py-3">{t('Kural')}</th>
+                  <th className="px-4 py-3 text-right">{t('Adet')}</th>
                   <th className="px-4 py-3">Seed</th>
-                  <th className="px-4 py-3">Tarih</th>
-                  <th className="px-4 py-3 text-right">İşlemler</th>
+                  <th className="px-4 py-3">{t('Tarih')}</th>
+                  <th className="px-4 py-3 text-right">{t('İşlemler')}</th>
                 </tr>
               </thead>
               <tbody>
-                {tests.map((t) => {
-                  const busy = busyId === t.id
-                  const isMixed = t.shape === 'mixed' || t.rule === 'mixed'
+                {tests.map((row) => {
+                  const busy = busyId === row.id
+                  const isMixed = row.shape === 'mixed' || row.rule === 'mixed'
                   return (
                     <tr
-                      key={t.id}
+                      key={row.id}
                       className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition"
                     >
                       <td className="px-4 py-3 font-medium text-[var(--color-text)]">
-                        {isMixed && <span className="mr-1.5" title="Mixer ile yapıldı">🎲</span>}
-                        {t.name}
+                        {isMixed && <span className="mr-1.5" title={t('Mixer ile yapıldı')}>🎲</span>}
+                        {row.name}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-muted)]">
                         {isMixed ? (
                           <span className="text-[var(--color-accent)]">mixed</span>
                         ) : (
-                          t.shape
+                          row.shape
                         )}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-muted)]">
                         {isMixed ? (
                           <span className="text-[var(--color-accent)]">mixed</span>
                         ) : (
-                          t.rule
+                          row.rule
                         )}
                       </td>
                       <td className="px-4 py-3 text-right text-[var(--color-text-muted)]">
-                        {t.count.toLocaleString('tr-TR')}
+                        {row.count.toLocaleString(locale)}
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-muted)]">
-                        {t.seed}
+                        {row.seed}
                       </td>
                       <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
-                        {new Date(t.createdAt).toLocaleString('tr-TR')}
+                        {new Date(row.createdAt).toLocaleString(locale)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="inline-flex gap-1">
                           <button
                             type="button"
-                            disabled={busy || !t.id}
-                            onClick={() => t.id && handlePlay(t.id)}
+                            disabled={busy || !row.id}
+                            onClick={() => row.id && handlePlay(row.id)}
                             className="px-3 py-1 rounded bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs disabled:opacity-50 transition cursor-pointer"
                           >
-                            Oyna
+                            {t('Oyna')}
                           </button>
                           <button
                             type="button"
-                            disabled={busy || !t.id}
-                            onClick={() => t.id && handleExport(t.id)}
+                            disabled={busy || !row.id}
+                            onClick={() => row.id && handleExport(row.id)}
                             className="px-3 py-1 rounded border border-[var(--color-border)] hover:border-[var(--color-accent)] text-xs disabled:opacity-50 transition cursor-pointer"
                           >
                             JSON
                           </button>
                           <button
                             type="button"
-                            disabled={busy || !t.id}
-                            onClick={() => t.id && handleDelete(t.id, t.name)}
+                            disabled={busy || !row.id}
+                            onClick={() => row.id && handleDelete(row.id, row.name)}
                             className="px-3 py-1 rounded border border-[var(--color-border)] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] text-xs disabled:opacity-50 transition cursor-pointer"
                           >
-                            Sil
+                            {t('Sil')}
                           </button>
                         </div>
                       </td>
@@ -207,8 +210,7 @@ export function Library() {
         )}
 
         <p className="text-xs text-[var(--color-text-muted)] mt-6 opacity-60">
-          Kütüphane bu tarayıcıda IndexedDB'de saklanır. Farklı tarayıcı/cihazda görünmez.
-          Paylaşmak için JSON olarak dışa aktarın.
+          {t("Kütüphane bu tarayıcıda IndexedDB'de saklanır. Farklı tarayıcı/cihazda görünmez. Paylaşmak için JSON olarak dışa aktarın.")}
         </p>
       </div>
     </div>

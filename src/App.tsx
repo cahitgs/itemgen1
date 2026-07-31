@@ -5,6 +5,7 @@ import { Editor } from './pages/Editor'
 import { Generate } from './pages/Generate'
 import { Library } from './pages/Library'
 import { Mixer } from './pages/Mixer'
+import { LangToggle } from './components/LangToggle'
 
 /**
  * HashRouter is used so the app works when served as static files
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/library" element={<Library />} />
         <Route path="/editor" element={<Editor />} />
       </Routes>
+      <LangToggle />
     </HashRouter>
   )
 }

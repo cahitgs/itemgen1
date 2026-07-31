@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useT } from '../i18n'
 
 export function Home() {
+  const t = useT()
   return (
     <div className="min-h-screen flex items-center justify-center p-8">
       <div className="max-w-3xl w-full">
@@ -8,9 +10,8 @@ export function Home() {
           Cogitem
         </h1>
         <p className="text-lg text-[var(--color-text-muted)] mb-12">
-          <em>Cogito ergo item</em> — non-verbal bilişsel test platformu.
-          Görsel-mantıksal bulmacaları üret, karıştır, oynat.
-          Binlerce benzersiz soru, tek tıkla.
+          <em>Cogito ergo item</em> —{' '}
+          {t('non-verbal bilişsel test platformu. Görsel-mantıksal bulmacaları üret, karıştır, oynat. Binlerce benzersiz soru, tek tıkla.')}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -19,9 +20,9 @@ export function Home() {
             className="block p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
           >
             <div className="text-3xl mb-2">▶</div>
-            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">Teste Başla</h2>
+            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">{t('Teste Başla')}</h2>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Hazır örnek sorularla testi dene. Sonuçları CSV olarak indir.
+              {t('Hazır örnek sorularla testi dene. Sonuçları CSV olarak indir.')}
             </p>
           </Link>
 
@@ -30,9 +31,9 @@ export function Home() {
             className="block p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
           >
             <div className="text-3xl mb-2">⚡</div>
-            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">Toplu Üret</h2>
+            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">{t('Toplu Üret')}</h2>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Şekil + kural + adet seç → binlerce benzersiz soruyu tek seferde üret.
+              {t('Şekil + kural + adet seç → binlerce benzersiz soruyu tek seferde üret.')}
             </p>
           </Link>
 
@@ -41,9 +42,9 @@ export function Home() {
             className="block p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
           >
             <div className="text-3xl mb-2">✏️</div>
-            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">Özel Soru Oluştur</h2>
+            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">{t('Özel Soru Oluştur')}</h2>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Hücre hücre elle tasarla. Şekil, renk, döndürme, parametreler — tam kontrol.
+              {t('Hücre hücre elle tasarla. Şekil, renk, döndürme, parametreler — tam kontrol.')}
             </p>
           </Link>
 
@@ -52,9 +53,9 @@ export function Home() {
             className="block p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
           >
             <div className="text-3xl mb-2">🎲</div>
-            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">Karışık Test</h2>
+            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">{t('Karışık Test')}</h2>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Birden çok testten N'er soru çek, karışık bir test yap.
+              {t("Birden çok testten N'er soru çek, karışık bir test yap.")}
             </p>
           </Link>
 
@@ -63,16 +64,15 @@ export function Home() {
             className="block md:col-span-2 p-6 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
           >
             <div className="text-3xl mb-2">📚</div>
-            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">Kütüphane</h2>
+            <h2 className="text-xl font-medium mb-1 text-[var(--color-text)]">{t('Kütüphane')}</h2>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Kaydettiğin testler. Tekrar oyna, JSON indir, sil.
+              {t('Kaydettiğin testler. Tekrar oyna, JSON indir, sil.')}
             </p>
           </Link>
         </div>
 
         <p className="text-xs text-[var(--color-text-muted)] mt-12 opacity-60">
-          14 şekil · 15 mantık (Identity, Dist-of-3/2, Progression, Rotation, Mirror, ±×, AND/OR/XOR/XNOR, Pattern Completion, Odd-One-Out) ·
-          3 puzzle tipi · manuel editör · tohumlu toplu üretim · CSV dışa aktarım
+          {t('15 şekil · 18 kural · 6 soru tipi · manuel editör · tohumlu toplu üretim · CSV dışa aktarım')}
         </p>
       </div>
     </div>

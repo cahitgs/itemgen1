@@ -2,6 +2,7 @@ import type { ShapeConfig } from '../../types/puzzle'
 import { Shape } from '../shapes/Shape'
 import { makeDistinctDistractors } from '../../logic/generator'
 import { mulberry32, randomSeed } from '../../logic/rng'
+import { useT } from '../../i18n'
 
 interface Props {
   /** The correct answer (cells[2][2] for 3x3 puzzles). */
@@ -23,6 +24,7 @@ interface Props {
  * but useful if they want to scramble the answer slot manually).
  */
 export function OptionsPanel({ correct, options, correctIndex, siblings, onChange }: Props) {
+  const t = useT()
   const regenerate = () => {
     const seed = randomSeed()
     const rng = mulberry32(seed)
@@ -47,14 +49,14 @@ export function OptionsPanel({ correct, options, correctIndex, siblings, onChang
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium text-[var(--color-text)]">Cevap Şıkları</h3>
+        <h3 className="text-sm font-medium text-[var(--color-text)]">{t('Cevap Şıkları')}</h3>
         <button
           type="button"
           onClick={regenerate}
           className="text-xs px-2 py-1 rounded border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
-          title="Çeldiricileri yeniden üretir (doğru cevap aynı kalır, ama konumu değişir)"
+          title={t('Çeldiricileri yeniden üretir (doğru cevap aynı kalır, ama konumu değişir)')}
         >
-          🎲 Çeldirici Üret
+          {t('🎲 Çeldirici Üret')}
         </button>
       </div>
 
@@ -74,7 +76,7 @@ export function OptionsPanel({ correct, options, correctIndex, siblings, onChang
                   ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10'
                   : 'border-[var(--color-border)] hover:border-[var(--color-text-muted)]'
               }`}
-              title={isCorrect ? 'Doğru cevap (tıkla = farklı şıkkı doğru yap)' : 'Bu şıkkı doğru olarak işaretle'}
+              title={isCorrect ? t('Doğru cevap (tıkla = farklı şıkkı doğru yap)') : t('Bu şıkkı doğru olarak işaretle')}
             >
               <Shape config={opt} px={72} />
               <span className="absolute top-1 left-1 text-[10px] font-bold text-[var(--color-text-muted)]">
@@ -91,7 +93,7 @@ export function OptionsPanel({ correct, options, correctIndex, siblings, onChang
       </div>
 
       <p className="text-xs text-[var(--color-text-muted)] mt-2">
-        Yeşil daireli şık doğru cevaptır. Farklı bir şıkkı doğru yapmak için üzerine tıkla.
+        {t('Yeşil daireli şık doğru cevaptır. Farklı bir şıkkı doğru yapmak için üzerine tıkla.')}
       </p>
     </div>
   )

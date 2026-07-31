@@ -1,5 +1,6 @@
 import type { FoldDirection, PaperFoldingPuzzle } from '../../types/puzzle'
 import { foldedDimensions } from '../../logic/paperFolding'
+import { useT } from '../../i18n'
 
 interface Props {
   puzzle: PaperFoldingPuzzle
@@ -31,6 +32,7 @@ const FOLD_LABEL: Record<FoldDirection, string> = {
  * the fold direction.
  */
 export function PaperFoldingGrid({ puzzle, paperPx = 110 }: Props) {
+  const t = useT()
   const { rows, cols, folds, hole } = puzzle
 
   // Build the list of intermediate paper dimensions: after fold 0, after fold 1, …
@@ -58,15 +60,14 @@ export function PaperFoldingGrid({ puzzle, paperPx = 110 }: Props) {
                 px={px}
               />
               {i < folds.length && (
-                <FoldArrow direction={folds[i]} label={FOLD_LABEL[folds[i]]} />
+                <FoldArrow direction={folds[i]} label={t(FOLD_LABEL[folds[i]])} />
               )}
             </div>
           )
         })}
       </div>
       <div className="text-xs text-[var(--color-text-muted)] text-center max-w-md">
-        Kağıt {folds.length} kez katlanmış, sonra ortadaki <strong>nokta</strong>{' '}
-        gibi delinmiş. Açılınca delikler nereye gelir?
+        {t('Kağıt {n} kez katlanmış, sonra delinmiş. Açılınca delikler nereye gelir?', { n: folds.length })}
       </div>
     </div>
   )

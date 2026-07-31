@@ -8,6 +8,7 @@ import { PuzzleGrid } from '../components/puzzle/PuzzleGrid'
 import { randomBaseShape, makeDistinctDistractors } from '../logic/generator'
 import { mulberry32, randomSeed } from '../logic/rng'
 import { saveTest } from '../db/dexie'
+import { useT } from '../i18n'
 
 type CellCoord = [number, number]
 
@@ -41,6 +42,7 @@ function uniformGrid(seed: ShapeConfig): ShapeConfig[][] {
  *   4) Name the test and save it to the library.
  */
 export function Editor() {
+  const t = useT()
   const navigate = useNavigate()
 
   // Initial state: identity-like — all 9 cells identical (a sane "fill-in" start)
@@ -54,7 +56,7 @@ export function Editor() {
     return [seed, ...distractors]
   })
   const [correctIndex, setCorrectIndex] = useState(0)
-  const [testName, setTestName] = useState('Özel Soru')
+  const [testName, setTestName] = useState(() => t('Özel Soru'))
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
   // Helpers
@@ -118,10 +120,10 @@ export function Editor() {
 
   const handleSave = async () => {
     if (!testName.trim()) {
-      setSaveMsg('Lütfen bir test adı gir.')
+      setSaveMsg(t('Lütfen bir test adı gir.'))
       return
     }
-    setSaveMsg('Kaydediliyor…')
+    setSaveMsg(t('Kaydediliyor…'))
     try {
       const puzzle: Matrix3x3Puzzle = {
         id: `manual-${Date.now()}`,
@@ -136,18 +138,18 @@ export function Editor() {
       }
       const id = await saveTest({
         name: testName.trim(),
-        description: 'Editör ile elle tasarlanmış soru.',
+        description: t('Editör ile elle tasarlanmış soru.'),
         shape: cells[0][0].kind,
         rule: 'identity',
         count: 1,
         seed: 0,
         puzzles: [puzzle],
       })
-      setSaveMsg(`Kaydedildi (id=${id}). Kütüphaneden oynayabilirsin.`)
+      setSaveMsg(t('Kaydedildi (id={id}). Kütüphaneden oynayabilirsin.', { id: String(id) }))
       // Optionally jump to library after a short pause
       setTimeout(() => navigate('/library'), 1200)
     } catch (e) {
-      setSaveMsg(`Hata: ${(e as Error).message}`)
+      setSaveMsg(t('Hata: {msg}', { msg: (e as Error).message }))
     }
   }
 
@@ -161,16 +163,16 @@ export function Editor() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-light text-[var(--color-text)]">Editör</h1>
+            <h1 className="text-3xl font-light text-[var(--color-text)]">{t('Editör')}</h1>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Hücre hücre soru tasarla. Her hücreye tıkla, sağ panelden ayarla. Sağ alt hücre cevap.
+              {t('Hücre hücre soru tasarla. Her hücreye tıkla, sağ panelden ayarla. Sağ alt hücre cevap.')}
             </p>
           </div>
           <Link
             to="/"
             className="text-sm px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
           >
-            ← Ana Sayfa
+            {t('← Ana Sayfa')}
           </Link>
         </div>
 
@@ -181,7 +183,7 @@ export function Editor() {
             {/* Editable 3×3 (click a cell to select it) */}
             <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
               <div className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
-                Soru Izgarası — tıkla & düzenle
+                {t('Soru Izgarası — tıkla & düzenle')}
               </div>
               <div className="grid grid-cols-3 gap-2 w-fit">
                 {cells.flatMap((row, ri) =>
@@ -198,12 +200,12 @@ export function Editor() {
                             ? 'bg-[var(--color-surface-2)] ring-2 ring-[var(--color-accent)]'
                             : 'bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-2)]/80 ring-1 ring-[var(--color-border)]'
                         }`}
-                        title={isAnswer ? 'Doğru cevap hücresi' : `[${ri},${ci}]`}
+                        title={isAnswer ? t('Doğru cevap hücresi') : `[${ri},${ci}]`}
                       >
                         <Shape config={cell} px={92} />
                         {isAnswer && (
                           <span className="absolute bottom-1 right-1 text-[10px] font-bold text-[var(--color-accent)]">
-                            ✓ cevap
+                            {t('✓ cevap')}
                           </span>
                         )}
                         <span className="absolute top-1 left-1 text-[9px] text-[var(--color-text-muted)]">
@@ -221,25 +223,25 @@ export function Editor() {
                   type="button"
                   onClick={fillAllFromSelected}
                   className="text-xs px-2.5 py-1.5 rounded border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
-                  title="Seçili hücreyi 9 yere kopyala (identity başlangıç)"
+                  title={t('Seçili hücreyi 9 yere kopyala (identity başlangıç)')}
                 >
-                  📋 Seçiliyi tümüne uygula
+                  {t('📋 Seçiliyi tümüne uygula')}
                 </button>
                 <button
                   type="button"
                   onClick={randomizeAll}
                   className="text-xs px-2.5 py-1.5 rounded border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
-                  title="Tüm hücreleri rastgele yap (aynı şekil, farklı parametreler)"
+                  title={t('Tüm hücreleri rastgele yap (aynı şekil, farklı parametreler)')}
                 >
-                  🎲 Tümünü rastgele
+                  {t('🎲 Tümünü rastgele')}
                 </button>
                 <button
                   type="button"
                   onClick={resetAll}
                   className="text-xs px-2.5 py-1.5 rounded border border-[var(--color-border)] hover:border-[var(--color-accent)] transition"
-                  title="Hepsini varsayılan başlangıca döndür"
+                  title={t('Hepsini varsayılan başlangıca döndür')}
                 >
-                  ↺ Sıfırla
+                  {t('↺ Sıfırla')}
                 </button>
               </div>
             </div>
@@ -247,7 +249,7 @@ export function Editor() {
             {/* Live preview (as the player would see it) */}
             <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
               <div className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
-                Oynanma Önizlemesi
+                {t('Oynanma Önizlemesi')}
               </div>
               <div className="flex justify-center">
                 <PuzzleGrid puzzle={previewPuzzle} cellPx={82} />
@@ -271,14 +273,14 @@ export function Editor() {
             {/* Save */}
             <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
               <div className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
-                Kütüphaneye Kaydet
+                {t('Kütüphaneye Kaydet')}
               </div>
               <div className="flex gap-2 items-center">
                 <input
                   type="text"
                   value={testName}
                   onChange={(e) => setTestName(e.target.value)}
-                  placeholder="Test adı (ör. 'Yıldız Döndürme Soru #1')"
+                  placeholder={t("Test adı (ör. 'Yıldız Döndürme Soru #1')")}
                   className="flex-1 px-3 py-2 rounded bg-[var(--color-surface-2)] border border-[var(--color-border)] text-sm"
                 />
                 <button
@@ -286,14 +288,14 @@ export function Editor() {
                   onClick={handleSave}
                   className="px-4 py-2 rounded bg-[var(--color-accent)] text-black font-medium text-sm hover:opacity-90 transition"
                 >
-                  💾 Kaydet
+                  {t('💾 Kaydet')}
                 </button>
               </div>
               {saveMsg && (
                 <p className="text-xs text-[var(--color-text-muted)] mt-2">{saveMsg}</p>
               )}
               <p className="text-xs text-[var(--color-text-muted)] mt-2 opacity-70">
-                Kaydedilince Kütüphane sayfasından oynayabilir ya da Karışık Test'e dahil edebilirsin.
+                {t("Kaydedilince Kütüphane sayfasından oynayabilir ya da Karışık Test'e dahil edebilirsin.")}
               </p>
             </div>
           </div>
@@ -306,8 +308,8 @@ export function Editor() {
                 onChange={(next) => updateCell(r, c, next)}
                 label={
                   isAnswerCell
-                    ? `[${r},${c}] — DOĞRU CEVAP HÜCRESİ`
-                    : `[${r},${c}] — Hücre Düzenleme`
+                    ? t('[{r},{c}] — DOĞRU CEVAP HÜCRESİ', { r, c })
+                    : t('[{r},{c}] — Hücre Düzenleme', { r, c })
                 }
               />
             </div>

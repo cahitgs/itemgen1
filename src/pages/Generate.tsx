@@ -16,6 +16,7 @@ import { PaperFoldingGrid, PaperDiagram } from '../components/paperFolding/Paper
 import { Shape } from '../components/shapes/Shape'
 import type { ShapeKind, RuleKind } from '../types/puzzle'
 import { saveTest } from '../db/dexie'
+import { useLang, useT } from '../i18n'
 
 /**
  * UI-level shape value — includes the virtual 'pattern' kind that doesn't
@@ -78,6 +79,8 @@ const COUNT_PRESETS = [10, 100, 1000, 5000]
  * preview them, and download as JSON.
  */
 export function Generate() {
+  const t = useT()
+  const { locale } = useLang()
   const [shape, setShape] = useState<ShapeUiValue>('annulus')
   const [rule, setRule] = useState<RuleKind>('dist-of-3')
   const [count, setCount] = useState(100)
@@ -193,7 +196,7 @@ export function Generate() {
     setSaveMsg(null)
     setSaveOpen(false)
     if (!supported) {
-      setError(`Bu kombinasyon henüz desteklenmiyor: ${shape} + ${rule}`)
+      setError(t('Bu kombinasyon henüz desteklenmiyor: {combo}', { combo: `${shape} + ${rule}` }))
       return
     }
     setRunning(true)
@@ -224,7 +227,7 @@ export function Generate() {
     if (!result) return
     const name = saveName.trim()
     if (!name) {
-      setSaveMsg('Bir isim gerekli')
+      setSaveMsg(t('Bir isim gerekli'))
       return
     }
     setSaving(true)
@@ -239,10 +242,10 @@ export function Generate() {
         seed: result.seed,
         puzzles: result.puzzles,
       })
-      setSaveMsg(`✓ "${name}" kütüphaneye eklendi`)
+      setSaveMsg(t('✓ "{name}" kütüphaneye eklendi', { name }))
       setSaveOpen(false)
     } catch (e) {
-      setSaveMsg(`Hata: ${e instanceof Error ? e.message : String(e)}`)
+      setSaveMsg(t('Hata: {msg}', { msg: e instanceof Error ? e.message : String(e) }))
     } finally {
       setSaving(false)
     }
@@ -256,16 +259,16 @@ export function Generate() {
             to="/"
             className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
           >
-            ← Ana Sayfa
+            {t('← Ana Sayfa')}
           </Link>
-          <h1 className="text-2xl font-light">Toplu Soru Üretimi</h1>
+          <h1 className="text-2xl font-light">{t('Toplu Soru Üretimi')}</h1>
           <span />
         </div>
 
         {/* ── Spec form ── */}
         <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Field label="Şekil">
+            <Field label={t('Şekil')}>
               <select
                 className="select"
                 value={shape}
@@ -273,13 +276,13 @@ export function Generate() {
               >
                 {visibleShapes.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(o.label)}
                   </option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Mantık">
+            <Field label={t('Mantık')}>
               <select
                 className="select"
                 value={rule}
@@ -287,13 +290,13 @@ export function Generate() {
               >
                 {visibleRules.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(o.label)}
                   </option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Adet">
+            <Field label={t('Adet')}>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -319,12 +322,12 @@ export function Generate() {
             </Field>
 
             <Field
-              label="Tohum (seed)"
-              hint="Aynı seed = aynı sorular. Boş bırakırsan rastgele."
+              label={t('Tohum (seed)')}
+              hint={t('Aynı seed = aynı sorular. Boş bırakırsan rastgele.')}
             >
               <input
                 type="text"
-                placeholder="örn. 42"
+                placeholder={t('örn. 42')}
                 value={seed}
                 onChange={(e) => setSeed(e.target.value)}
                 className="input"
@@ -334,7 +337,7 @@ export function Generate() {
 
           {!supported && (
             <p className="text-sm text-[var(--color-danger)] mt-4">
-              ⚠ Bu kombinasyon henüz desteklenmiyor. Faz 3'te eklenecek.
+              {t('⚠ Bu kombinasyon henüz desteklenmiyor.')}
             </p>
           )}
           {error && <p className="text-sm text-[var(--color-danger)] mt-4">{error}</p>}
@@ -346,7 +349,7 @@ export function Generate() {
               disabled={!supported || running}
               className="px-6 py-2.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
             >
-              {running ? 'Üretiliyor…' : `${count.toLocaleString('tr-TR')} soru üret`}
+              {running ? t('Üretiliyor…') : t('{count} soru üret', { count: count.toLocaleString(locale) })}
             </button>
             {result && (
               <>
@@ -355,14 +358,14 @@ export function Generate() {
                   onClick={() => downloadPuzzlesJson(result, spec)}
                   className="px-6 py-2.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition cursor-pointer"
                 >
-                  JSON İndir
+                  {t('JSON İndir')}
                 </button>
                 <button
                   type="button"
                   onClick={openSavePanel}
                   className="px-6 py-2.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition cursor-pointer"
                 >
-                  Kütüphaneye Kaydet
+                  {t('Kütüphaneye Kaydet')}
                 </button>
               </>
             )}
@@ -372,7 +375,7 @@ export function Generate() {
           {saveOpen && result && (
             <div className="mt-4 p-4 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)]">
               <label className="text-sm text-[var(--color-text-muted)] block mb-2">
-                Test ismi
+                {t('Test ismi')}
               </label>
               <div className="flex flex-col md:flex-row gap-2">
                 <input
@@ -384,7 +387,7 @@ export function Generate() {
                     if (e.key === 'Enter') handleSave()
                     if (e.key === 'Escape') setSaveOpen(false)
                   }}
-                  placeholder="örn. annulus-progresion-100"
+                  placeholder={t('örn. annulus-progression-100')}
                   autoFocus
                 />
                 <button
@@ -393,20 +396,20 @@ export function Generate() {
                   disabled={saving}
                   className="px-4 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium disabled:opacity-50 transition cursor-pointer"
                 >
-                  {saving ? 'Kaydediliyor…' : 'Kaydet'}
+                  {saving ? t('Kaydediliyor…') : t('Kaydet')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSaveOpen(false)}
                   className="px-4 py-2 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-text-muted)] transition cursor-pointer"
                 >
-                  İptal
+                  {t('İptal')}
                 </button>
               </div>
               <p className="text-xs text-[var(--color-text-muted)] mt-2 opacity-70">
-                Test tarayıcının IndexedDB veritabanında saklanır.
+                {t('Test tarayıcının IndexedDB veritabanında saklanır.')}
                 <Link to="/library" className="text-[var(--color-accent)] hover:underline ml-1">
-                  Kütüphanede görüntüle →
+                  {t('Kütüphanede görüntüle →')}
                 </Link>
               </p>
             </div>
@@ -414,12 +417,12 @@ export function Generate() {
 
           {saveMsg && !saveOpen && (
             <div className="mt-4 text-sm">
-              <span className={saveMsg.startsWith('Hata') ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}>
+              <span className={/^(Hata|Error)/.test(saveMsg) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}>
                 {saveMsg}
               </span>
-              {!saveMsg.startsWith('Hata') && (
+              {!/^(Hata|Error)/.test(saveMsg) && (
                 <Link to="/library" className="text-[var(--color-accent)] hover:underline ml-2">
-                  Kütüphaneye git →
+                  {t('Kütüphaneye git →')}
                 </Link>
               )}
             </div>
@@ -476,6 +479,8 @@ function ResultPanel({
   previewIndex: number
   setPreviewIndex: (i: number) => void
 }) {
+  const t = useT()
+  const { locale } = useLang()
   const puzzle = result.puzzles[previewIndex]
   if (!puzzle) return null
 
@@ -483,23 +488,22 @@ function ResultPanel({
     <>
       <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 mb-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Stat label="Üretildi" value={result.puzzles.length.toLocaleString('tr-TR')} accent />
-          <Stat label="Yinelenmiş atlandı" value={result.duplicatesSkipped.toLocaleString('tr-TR')} />
-          <Stat label="Geçersiz atlandı" value={result.invalidSkipped.toLocaleString('tr-TR')} />
-          <Stat label="Toplam deneme" value={result.attempts.toLocaleString('tr-TR')} />
+          <Stat label={t('Üretildi')} value={result.puzzles.length.toLocaleString(locale)} accent />
+          <Stat label={t('Yinelenmiş atlandı')} value={result.duplicatesSkipped.toLocaleString(locale)} />
+          <Stat label={t('Geçersiz atlandı')} value={result.invalidSkipped.toLocaleString(locale)} />
+          <Stat label={t('Toplam deneme')} value={result.attempts.toLocaleString(locale)} />
           <Stat label="Seed" value={String(result.seed)} mono />
         </div>
         {result.reachedCeiling && (
           <p className="text-xs text-[var(--color-text-muted)] mt-4 opacity-80">
-            ℹ Parametre uzayı tükendi — daha fazla soru üretmek için ek varyasyon eksenleri gerekir
-            (renk paleti, ek şekiller, daha geniş döndürme aralığı).
+            {t('ℹ Parametre uzayı tükendi — daha fazla soru üretmek için ek varyasyon eksenleri gerekir (renk paleti, ek şekiller, daha geniş döndürme aralığı).')}
           </p>
         )}
       </div>
 
       <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium">Önizleme</h2>
+          <h2 className="text-lg font-medium">{t('Önizleme')}</h2>
           <div className="flex items-center gap-2 text-sm">
             <button
               type="button"
@@ -529,7 +533,7 @@ function ResultPanel({
               }
               className="px-3 py-1 rounded bg-[var(--color-surface-2)] hover:bg-[var(--color-accent)] hover:text-white transition cursor-pointer"
             >
-              Rastgele
+              {t('Rastgele')}
             </button>
           </div>
         </div>
@@ -547,12 +551,12 @@ function ResultPanel({
             <PaperFoldingGrid puzzle={puzzle} paperPx={90} />
           ) : puzzle.type === 'odd-one-out' ? (
             <div className="text-sm text-[var(--color-text-muted)] italic px-4 py-8">
-              Odd-One-Out: tüm seçenekler sağda gösteriliyor
+              {t('Odd-One-Out: tüm seçenekler sağda gösteriliyor')}
             </div>
           ) : null}
           <div>
             <p className="text-sm text-[var(--color-text-muted)] mb-2">
-              Cevap şıkları (doğru:{' '}
+              {t('Cevap şıkları (doğru:')}{' '}
               <span className="text-[var(--color-success)]">
                 #{puzzle.correctIndex + 1}
               </span>

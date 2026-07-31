@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ShapeConfig, ShapeKind } from '../../types/puzzle'
 import { Shape } from '../shapes/Shape'
 import { STROKE_PALETTE, packSectorPatterns, unpackSectorPatterns } from '../../logic/generator'
+import { useT } from '../../i18n'
 
 interface Props {
   config: ShapeConfig
@@ -139,6 +140,7 @@ function defaultParamsFor(kind: ShapeKind): Record<string, number> {
 const PATTERN_LABELS = ['boş', 'dolu', 'noktalı', 'yatay', 'dikey', 'diag \\', 'diag /', 'çapraz']
 
 export function CellEditor({ config, onChange, label, hidePreview }: Props) {
+  const t = useT()
   const [advanced, setAdvanced] = useState(false)
 
   // Cast away cube-stack: it's never reachable here (SHAPE_KINDS dropdown
@@ -175,7 +177,7 @@ export function CellEditor({ config, onChange, label, hidePreview }: Props) {
 
       {/* Shape kind */}
       <div>
-        <label className="block text-xs text-[var(--color-text-muted)] mb-1">Şekil</label>
+        <label className="block text-xs text-[var(--color-text-muted)] mb-1">{t('Şekil')}</label>
         <select
           value={config.kind}
           onChange={(e) => setKind(e.target.value as ShapeKind)}
@@ -183,7 +185,7 @@ export function CellEditor({ config, onChange, label, hidePreview }: Props) {
         >
           {SHAPE_KINDS.map((k) => (
             <option key={k} value={k}>
-              {(SHAPE_LABELS as Record<string, string>)[k] ?? k}
+              {t((SHAPE_LABELS as Record<string, string>)[k] ?? k)}
             </option>
           ))}
         </select>
@@ -207,7 +209,7 @@ export function CellEditor({ config, onChange, label, hidePreview }: Props) {
 
       {/* Color */}
       <div>
-        <label className="block text-xs text-[var(--color-text-muted)] mb-1">Renk</label>
+        <label className="block text-xs text-[var(--color-text-muted)] mb-1">{t('Renk')}</label>
         <div className="flex gap-2 flex-wrap">
           {STROKE_PALETTE.map((c) => (
             <button
@@ -230,7 +232,7 @@ export function CellEditor({ config, onChange, label, hidePreview }: Props) {
         onClick={() => setAdvanced((v) => !v)}
         className="w-full text-left text-xs text-[var(--color-accent)] hover:underline pt-2"
       >
-        {advanced ? '▾' : '▸'} Gelişmiş ayarlar
+        {advanced ? '▾' : '▸'} {t('Gelişmiş ayarlar')}
       </button>
 
       {advanced && (
@@ -254,7 +256,7 @@ export function CellEditor({ config, onChange, label, hidePreview }: Props) {
                 checked={config.fill !== null}
                 onChange={(e) => onChange({ ...config, fill: e.target.checked ? config.stroke : null })}
               />
-              <span>Dolu (fill ile)</span>
+              <span>{t('Dolu (fill ile)')}</span>
             </label>
           </div>
 
@@ -299,12 +301,13 @@ interface SliderProps {
 }
 
 function ParamSlider({ def, value, onChange }: SliderProps) {
+  const t = useT()
   const isInt = def.step === 1
   const display = isInt ? Math.round(value).toString() : value.toFixed(2)
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-xs text-[var(--color-text-muted)]">{def.label}</label>
+        <label className="text-xs text-[var(--color-text-muted)]">{t(def.label)}</label>
         <span className="text-xs tabular-nums text-[var(--color-text)]">{display}</span>
       </div>
       <input
@@ -321,6 +324,7 @@ function ParamSlider({ def, value, onChange }: SliderProps) {
 }
 
 function SectorPatternEditor({ config, onChange }: { config: ShapeConfig; onChange: (c: ShapeConfig) => void }) {
+  const t = useT()
   const sectorCount = Math.round(config.params.sectorCount ?? 4)
   const patterns = unpackSectorPatterns(config.params.sectorPatterns ?? 0, sectorCount)
 
@@ -335,7 +339,7 @@ function SectorPatternEditor({ config, onChange }: { config: ShapeConfig; onChan
 
   return (
     <div>
-      <label className="block text-xs text-[var(--color-text-muted)] mb-1">Dilim Desenleri</label>
+      <label className="block text-xs text-[var(--color-text-muted)] mb-1">{t('Dilim Desenleri')}</label>
       <div className="space-y-1">
         {Array.from({ length: sectorCount }).map((_, i) => (
           <div key={i} className="flex items-center gap-2">
@@ -346,7 +350,7 @@ function SectorPatternEditor({ config, onChange }: { config: ShapeConfig; onChan
               className="flex-1 px-1.5 py-1 text-xs rounded bg-[var(--color-surface-2)] border border-[var(--color-border)]"
             >
               {PATTERN_LABELS.map((label, p) => (
-                <option key={p} value={p}>{p} — {label}</option>
+                <option key={p} value={p}>{p} — {t(label)}</option>
               ))}
             </select>
           </div>
@@ -357,6 +361,7 @@ function SectorPatternEditor({ config, onChange }: { config: ShapeConfig; onChan
 }
 
 function CheckerboardMaskEditor({ config, onChange }: { config: ShapeConfig; onChange: (c: ShapeConfig) => void }) {
+  const t = useT()
   const rows = Math.round(config.params.rows ?? 3)
   const cols = Math.round(config.params.cols ?? 3)
   const pattern = Math.round(config.params.pattern ?? 0)
@@ -369,7 +374,7 @@ function CheckerboardMaskEditor({ config, onChange }: { config: ShapeConfig; onC
 
   return (
     <div>
-      <label className="block text-xs text-[var(--color-text-muted)] mb-1">Hücre Doluluk (tıkla)</label>
+      <label className="block text-xs text-[var(--color-text-muted)] mb-1">{t('Hücre Doluluk (tıkla)')}</label>
       <div
         className="inline-grid gap-0.5 p-1 bg-[var(--color-surface-2)] rounded border border-[var(--color-border)]"
         style={{ gridTemplateColumns: `repeat(${cols}, 1.5rem)` }}
@@ -397,12 +402,13 @@ function CheckerboardMaskEditor({ config, onChange }: { config: ShapeConfig; onC
 const BOX_LINE_LABELS = ['Sol', 'Sağ', 'Üst', 'Alt', 'Diag \\', 'Diag /']
 
 function BoxLinesMaskEditor({ config, onChange }: { config: ShapeConfig; onChange: (c: ShapeConfig) => void }) {
+  const t = useT()
   const mask = Math.round(config.params.lineMask ?? 0)
   const toggleBit = (b: number) =>
     onChange({ ...config, params: { ...config.params, lineMask: mask ^ (1 << b) } })
   return (
     <div>
-      <label className="block text-xs text-[var(--color-text-muted)] mb-1">Çizgiler</label>
+      <label className="block text-xs text-[var(--color-text-muted)] mb-1">{t('Çizgiler')}</label>
       <div className="grid grid-cols-2 gap-1">
         {BOX_LINE_LABELS.map((label, b) => (
           <label key={b} className="flex items-center gap-1 text-xs cursor-pointer">
@@ -411,7 +417,7 @@ function BoxLinesMaskEditor({ config, onChange }: { config: ShapeConfig; onChang
               checked={!!(mask & (1 << b))}
               onChange={() => toggleBit(b)}
             />
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </label>
         ))}
       </div>

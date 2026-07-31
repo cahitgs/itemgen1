@@ -1,5 +1,6 @@
 import type { CubeProjectionPuzzle } from '../../types/puzzle'
 import { CubeStack } from './CubeStack'
+import { useT } from '../../i18n'
 
 interface Props {
   puzzle: CubeProjectionPuzzle
@@ -22,12 +23,13 @@ const AXIS_LABEL: Record<string, string> = {
  * highlight independently (mirrors the 3×3 grid + OptionPanel split).
  */
 export function CubePuzzleGrid({ puzzle, stackPx = 220 }: Props) {
-  const axisLabel = AXIS_LABEL[puzzle.questionAxis] ?? puzzle.questionAxis
+  const t = useT()
+  const axisLabel = t(AXIS_LABEL[puzzle.questionAxis] ?? puzzle.questionAxis)
   return (
     <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] flex flex-col items-center gap-2">
       <CubeStack cubes={puzzle.cubes} questionAxis={puzzle.questionAxis} px={stackPx} />
       <div className="text-xs text-[var(--color-text-muted)]">
-        Bakış yönü: <span className="text-[var(--color-text)] font-medium">{axisLabel}</span>
+        {t('Bakış yönü:')} <span className="text-[var(--color-text)] font-medium">{axisLabel}</span>
       </div>
     </div>
   )
